@@ -1,56 +1,111 @@
-# Welcome to your Expo app 👋
+<div align="center">
+  <h1>DuitGue</h1>
+  <p>Aplikasi pencatatan keuangan personal <strong>#seIndonesia-lo</strong> dengan gaya visual Neo-Brutalism.</p>
+  <p>
+    <strong>React Native</strong> · <strong>Expo SDK 56</strong> · <strong>Supabase</strong> · <strong>NativeWind</strong>
+  </p>
+</div>
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 📱 Tentang DuitGue
 
-## Get started
+DuitGue adalah aplikasi mobile pencatatan keuangan personal berbahasa Indonesia. Dibangun untuk membantu individu mencatat pengeluaran dan pemasukan harian dengan mudah, cepat, dan tanpa hambatan — dengan tampilan Neo-Brutalism yang tegas, kontras, dan berkarakter.
 
-1. Install dependencies
+### ✨ Fitur Utama
 
-   ```bash
-   npm install
-   ```
+- **Pencatatan Transaksi** — Catat pengeluaran & pemasukan pakai custom numpad keypad.
+- **Kategori Kustom** — Bebas edit nama, pilih warna solid, dan ikon dari MaterialCommunityIcons.
+- **Grafik Analitik** — Donut chart interaktif plus detail bar progress per kategori.
+- **Laporan Ringkasan** — Tabel rekam jejak keuangan bulanan (Bulan | Pengeluaran | Pemasukan | Saldo).
+- **Auth System** — SignUp instan, Login, Forgot Password, dan Reset Password universal.
+- **Profil & Keamanan (Gue)** — Ganti Email, Hapus Akun, Export Data, Hapus Cache.
+- **Bottom Navigation** — Rumah · Grafik · Laporan · Gue
 
-2. Start the app
+## 🧱 Tech Stack
 
-   ```bash
-   npx expo start
-   ```
+| Layer             | Teknologi                              |
+| :---------------- | :------------------------------------- |
+| **Framework**     | React Native (Expo SDK 56)             |
+| **Router**        | Expo Router v3 (file-based)            |
+| **Backend & DB**  | Supabase (PostgreSQL + Auth + Storage) |
+| **Server State**  | TanStack Query v5                      |
+| **Local State**   | Zustand                                |
+| **Local Storage** | MMKV (`react-native-mmkv`)             |
+| **Styling**       | NativeWind v4 (Tailwind CSS)           |
+| **Form Handling** | React Hook Form + Zod                  |
+| **Charts**        | Victory Native XL                      |
+| **Icons**         | MaterialCommunityIcons                 |
+| **Notifikasi**    | Expo Notifications                     |
+| **OTA Update**    | EAS Update                             |
 
-In the output, you'll find options to open the app in a
+## 📁 Struktur Folder
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+duitgue/
+├── app/                    # Expo Router (file-based routing)
+│   ├── (auth)/             # Halaman sebelum login
+│   ├── (app)/              # Halaman utama (Bottom Tab)
+│   └── _layout.tsx         # Root layout (session handler)
+├── components/
+│   ├── ui/                 # Button, Input, Card — Neo-Brutalism
+│   ├── transaction/        # TransactionItem, AddModal, Numpad
+│   ├── category/           # CategoryPicker, CategorySettingsItem
+│   └── charts/             # CustomDonutChart, CategoryProgressBar
+├── lib/
+│   ├── supabase.ts         # Supabase client
+│   ├── mmkv.ts             # MMKV storage instance
+│   └── utils.ts            # Helper (formatRupiah, dll)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🎨 Design System
 
-### Other setup steps
+| Warna             | Kode      | Penggunaan                          |
+| :---------------- | :-------- | :---------------------------------- |
+| Kuning (Primary)  | `#F5C518` | Tombol utama, kartu saldo, FAB      |
+| Hijau (Sukses)    | `#4CAF50` | Pemasukan, Toast Sukses             |
+| Merah (Hapus)     | `#F44336` | Pengeluaran, tombol destruktif      |
+| Teal (Google)     | `#00BCD4` | Tombol OAuth Google                 |
+| Hitam (Border)    | `#1A1A1A` | Border, teks, tab bar               |
+| Abu Muda (BG)     | `#F5F5F5` | Latar belakang screen               |
+| Putih (Card)      | `#FFFFFF` | Latar komponen                      |
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Neo-Brutalism rules: border hitam tebal (`border-2 border-[#1A1A1A]`), hard shadow solid (`shadow-[4px_4px_0px_0px_#1A1A1A]`), dan pressed state tanpa shadow.
 
-## Learn more
+## 🚀 Cara Mulai
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+# 1. Clone repo
+git clone https://github.com/username/duitgue.git
+cd duitgue
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+# 2. Install dependencies
+npm install
 
-## Join the community
+# 3. Copy & isi environment variables
+cp .env.example .env.local
 
-Join our community of developers creating universal apps.
+# 4. Jalankan aplikasi
+npx expo start              # Expo Go
+npx expo start --dev-client # Native modules (MMKV)
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 📟 Perintah Penting
+
+| Perintah                           | Keterangan                                    |
+| :--------------------------------- | :-------------------------------------------- |
+| `npx expo start`                   | Development server (Expo Go)                  |
+| `npx expo start --dev-client`      | Development dengan native modules             |
+| `npx expo run:android`             | Build & jalanin di Android simulator/device   |
+| `npx expo run:ios`                 | Build & jalanin di iOS simulator              |
+| `eas build --profile preview`      | Build APK internal testing                    |
+| `eas update`                       | Hotfix OTA langsung ke production             |
+
+## ⚠️ Catatan Penting
+
+- **Expo Go SDK 56** tidak mendukung modul native eksternal (MMKV). Gunakan **Expo Dev Client** untuk development lokal.
+- **Rupiah disimpan sebagai integer** (bigint), bukan float — untuk mencegah bug pembulatan.
+- **RLS (Row Level Security)** wajib aktif di semua tabel Supabase.
+- Jangan commit file `.env` atau kredensial mentah Supabase ke git.
+
+## 📄 Lisensi
+
+[MIT](LICENSE)

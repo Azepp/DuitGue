@@ -2,16 +2,18 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AddNewCategory } from "@/components/category/AddNewCategory";
 import { CategorySettingsItem, type CategoryItem } from "@/components/category/CategorySettingsItem";
 
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { useToast } from "@/components/ui/toast";
 import { Colors, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
+
 
 function CategorySettingsContent() {
   const session = useAuthStore((s) => s.session);
@@ -22,6 +24,7 @@ function CategorySettingsContent() {
   const [selectedType, setSelectedType] = useState<"pengeluaran" | "pemasukan">("pengeluaran");
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState<CategoryItem | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [pengeluaranItems, setPengeluaranItems] = useState<CategoryItem[]>([]);
   const [pemasukanItems, setPemasukanItems] = useState<CategoryItem[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -115,8 +118,10 @@ function CategorySettingsContent() {
   };
 
   const persistOrder = async (ordered: CategoryItem[], type: "pengeluaran" | "pemasukan") => {
+    const baseTime = Date.now();
     for (let i = 0; i < ordered.length; i++) {
-      await supabase.from("categories").update({ created_at: ordered[i].created_at }).eq("id", ordered[i].id);
+      const sortDate = new Date(baseTime - (ordered.length - i) * 1000).toISOString();
+      await supabase.from("categories").update({ created_at: sortDate }).eq("id", ordered[i].id);
     }
     invalidate();
   };
@@ -156,10 +161,14 @@ function CategorySettingsContent() {
   });
 
   const handleDelete = (id: string) => {
-    Alert.alert("Hapus Kategori", "Yakin mau hapus kategori ini?", [
-      { text: "Gajadi", style: "cancel" },
-      { text: "Hapus", style: "destructive", onPress: () => deleteMutation.mutate(id) },
-    ]);
+    setDeleteTargetId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteTargetId) {
+      deleteMutation.mutate(deleteTargetId);
+      setDeleteTargetId(null);
+    }
   };
 
   const handleEdit = (item: CategoryItem) => {
@@ -367,10 +376,13 @@ function CategorySettingsContent() {
       </View>
 
       <View style={{ paddingHorizontal: Spacing.pageX, paddingTop: 0, paddingBottom: Spacing.twoHalf, backgroundColor: Colors.background }}>
-        <Pressable style={({ pressed }) => [styles.addBtn, pressed && styles.addBtnPressed]} onPress={handleAdd}>
-          <MaterialCommunityIcons name="plus" size={22} color={Colors.black} />
-          <Text style={styles.addBtnText}>Tambah Kategori</Text>
-        </Pressable>
+        <View style={styles.addBtnOuter}>
+          <View style={styles.addBtnShadow} pointerEvents="none" />
+          <Pressable style={({ pressed }) => [styles.addBtn, pressed && styles.addBtnPressed]} onPress={handleAdd}>
+            <MaterialCommunityIcons name="plus" size={22} color={Colors.black} />
+            <Text style={styles.addBtnText}>Tambah Kategori</Text>
+          </Pressable>
+        </View>
       </View>
 
       <AddNewCategory
@@ -382,6 +394,17 @@ function CategorySettingsContent() {
           setEditingItem(null);
         }}
         onSave={handleSave}
+      />
+
+      <ConfirmModal
+        visible={deleteTargetId !== null}
+        title="Hapus Kategori"
+        message="Yakin mau hapus kategori ini?"
+        confirmText="Ya, Hapus"
+        cancelText="Gajadi"
+        confirmVariant="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTargetId(null)}
       />
     </View>
   );
@@ -480,6 +503,22 @@ const styles = StyleSheet.create({
     color: Colors.gray,
     marginTop: Spacing.two,
   },
+  addBtnOuter: {
+    position: "relative",
+    paddingRight: 3,
+    paddingBottom: 3,
+  },
+  addBtnShadow: {
+    position: "absolute",
+    top: 3,
+    left: 3,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.black,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
   addBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -493,7 +532,6 @@ const styles = StyleSheet.create({
   },
   addBtnPressed: {
     transform: [{ translateX: 3 }, { translateY: 3 }],
-    backgroundColor: Colors.primary,
   },
   addBtnText: {
     fontSize: 15,

@@ -225,7 +225,26 @@ function AddTransactionContent() {
         </Animated.View>
       </View>
 
-      <TouchableOpacity style={[styles.aturBtn, { bottom: insets.bottom + Spacing.four }]} onPress={() => router.push("/category-settings")}>
+      <TouchableOpacity style={[styles.aturBtn, { bottom: insets.bottom + Spacing.four }]} onPress={() => {
+        const userId = session?.user.id;
+        if (userId) {
+          queryClient.prefetchQuery({
+            queryKey: ["categories", "pengeluaran", userId],
+            queryFn: async () => {
+              const { data } = await supabase.from("categories").select("*").eq("user_id", userId).eq("type", "pengeluaran").order("created_at");
+              return data ?? [];
+            },
+          });
+          queryClient.prefetchQuery({
+            queryKey: ["categories", "pemasukan", userId],
+            queryFn: async () => {
+              const { data } = await supabase.from("categories").select("*").eq("user_id", userId).eq("type", "pemasukan").order("created_at");
+              return data ?? [];
+            },
+          });
+        }
+        router.push("/category-settings");
+      }}>
         <MaterialCommunityIcons name="cog-outline" size={18} color={Colors.black} />
         <Text style={styles.aturBtnText}>Atur</Text>
       </TouchableOpacity>

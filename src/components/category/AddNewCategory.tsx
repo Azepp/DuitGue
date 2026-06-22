@@ -215,13 +215,20 @@ export function AddNewCategory({ visible, type, editData, onClose, onSave }: Pro
         ))}
       </ScrollView>
 
-      <Pressable
-        style={({ pressed }) => [styles.saveBtn, { backgroundColor: type === "pengeluaran" ? Colors.danger : Colors.success }, pressed && styles.saveBtnPressed, (!name.trim() || saving) && styles.saveBtnDisabled]}
-        onPress={handleSave}
-        disabled={!name.trim() || saving}
-      >
-        <Text style={styles.saveBtnText}>{saving ? "Menyimpan..." : "Gaskeun"}</Text>
-      </Pressable>
+      <View style={styles.saveBtnOuter}>
+        {(!name.trim() || saving) ? null : <View style={styles.saveBtnShadow} pointerEvents="none" />}
+        <Pressable
+          style={({ pressed }) => [
+            styles.saveBtn,
+            { backgroundColor: (!name.trim() || saving) ? Colors.gray : (type === "pengeluaran" ? Colors.danger : Colors.success) },
+            pressed && !(!name.trim() || saving) && styles.saveBtnPressed,
+          ]}
+          onPress={handleSave}
+          disabled={!name.trim() || saving}
+        >
+          <Text style={styles.saveBtnText}>{saving ? "Menyimpan..." : "Gaskeun"}</Text>
+        </Pressable>
+      </View>
     </Animated.View>
   );
 
@@ -347,25 +354,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.white,
   },
+  saveBtnOuter: {
+    position: "relative",
+    paddingRight: 3,
+    paddingBottom: 3,
+    marginTop: Spacing.two,
+  },
+  saveBtnShadow: {
+    position: "absolute",
+    top: 3,
+    left: 3,
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.black,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
   saveBtn: {
-    marginTop: Spacing.four,
     paddingVertical: 14,
     borderRadius: 12,
-    borderWidth: 3,
+    borderWidth: 2,
     borderColor: Colors.black,
     alignItems: "center",
-    shadowColor: Colors.black,
-    shadowOffset: { width: 4, height: 4 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    elevation: 5,
   },
   saveBtnPressed: {
     transform: [{ translateX: 3 }, { translateY: 3 }],
-    shadowOpacity: 0,
-  },
-  saveBtnDisabled: {
-    opacity: 0.5,
   },
   saveBtnText: {
     fontSize: 16,

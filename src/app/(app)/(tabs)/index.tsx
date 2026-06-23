@@ -179,7 +179,7 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Haihai, {displayName}</Text>
-        <TouchableOpacity style={styles.searchBtn}>
+        <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
           <MaterialCommunityIcons name="magnify" size={20} color={Colors.black} />
         </TouchableOpacity>
       </View>

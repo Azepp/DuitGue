@@ -8,7 +8,7 @@ import { Colors, Spacing } from '@/constants/theme';
 type ToastType = 'success' | 'error';
 
 type ToastContextValue = {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, duration?: number) => void;
 };
 
 const ToastContext = createContext<ToastContextValue>({
@@ -31,7 +31,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, [translateY]);
 
   const showToast = useCallback(
-    (msg: string, toastType: ToastType = 'success') => {
+    (msg: string, toastType: ToastType = 'success', duration: number = 1500) => {
       if (timerRef.current) clearTimeout(timerRef.current);
       setType(toastType);
       setMessage(msg);
@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         damping: 15,
         stiffness: 200,
       }).start();
-      timerRef.current = setTimeout(hide, 1500);
+      timerRef.current = setTimeout(hide, duration);
     },
     [translateY, hide],
   );

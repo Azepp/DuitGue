@@ -18,6 +18,9 @@ export default function AppLayout() {
         />
         <Stack.Screen name="detail-profile" />
         <Stack.Screen name="category-settings" />
+        <Stack.Screen name="profile/edit" />
+        <Stack.Screen name="profile/change-email" />
+        <Stack.Screen name="search" />
       </Stack>
     </View>
   );

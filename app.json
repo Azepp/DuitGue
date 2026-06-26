@@ -4,24 +4,39 @@
     "slug": "DuitGue",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/images/icon.png",
     "scheme": "duitgue",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/images/logo.png"
+      "icon": "./assets/images/icon.png",
+      "supportsTablet": true,
+      "bundleIdentifier": "com.asepexpo.DuitGue",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
+      "icon": "/assets/images/logo.png",
       "adaptiveIcon": {
         "backgroundColor": "#F5C518",
-        "foregroundImage": "./assets/images/logo.png"
+        "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.asepexpo.DuitGue"
     },
     "web": {
-      "output": "static",
-      "favicon": "./assets/images/logo.png"
+      "output": "single",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/9ebea1ef-355a-4c68-9516-d4d2e7757e34",
+      "fallbackToCacheTimeout": 0,
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     },
     "plugins": [
       "expo-router",
@@ -29,13 +44,15 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F5C518",
-          "image": "./assets/images/logo.png",
+          "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
       ],
       "expo-font",
       "expo-web-browser",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-updates",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,

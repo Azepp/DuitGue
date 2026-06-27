@@ -380,7 +380,7 @@ export function AddModalProvider({
       {Platform.OS === 'android' ? (
         visible && (
           <View style={styles.overlayAbsolute}>
-            <Pressable style={styles.backdrop} onPress={close} />
+            <Pressable style={{ flex: 1 }} onPress={close} />
             {sheetContent}
           </View>
         )
@@ -412,9 +412,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'flex-end',
     zIndex: 1000,
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFill,
   },
   sheet: {
     backgroundColor: Colors.background,

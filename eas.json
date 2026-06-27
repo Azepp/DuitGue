@@ -27,8 +27,13 @@
       "android": {
         "buildType": "app-bundle"
       },
-      "ios": {
-        "buildType": "release"
+      "ios": {}
+    },
+    "production-apk": {
+      "extends": "production",
+      "channel": "production",
+      "android": {
+        "buildType": "apk"
       }
     }
   },

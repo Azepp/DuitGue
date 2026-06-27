@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { ThemedText } from "@/components/themed-text";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoInput } from "@/components/ui/neo-input";
@@ -6,13 +5,9 @@ import { PageLayout } from "@/components/ui/page-layout";
 import { Colors } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Link } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Image, Keyboard, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
-
-WebBrowser.maybeCompleteAuthSession();
-
-const googleRedirectUri = Linking.createURL("/");
+import { signInWithGoogle } from "@/lib/google-signin";
 
 export default function SignUpScreen() {
   const [displayName, setDisplayName] = useState("");
@@ -26,7 +21,7 @@ export default function SignUpScreen() {
     if (!displayName.trim()) e.displayName = "Nama harus diisi";
     if (!email.trim()) e.email = "Email harus diisi";
     if (!password) e.password = "Password harus diisi";
-    else if (password.length < 6) e.password = "Minimal 6 karakter";
+    else if (password.length < 8) e.password = "Minimal 8 karakter";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -44,7 +39,7 @@ export default function SignUpScreen() {
     });
 
     if (error) {
-      const msg = error.message === "User already registered" ? "Email udah dipake" : error.message;
+      const msg = error.message === "User already registered" ? "Email sudah terdaftar, coba login" : 'Gagal daftar. Coba lagi nanti.';
       setErrors({ email: msg });
       setLoading(false);
       return;
@@ -64,33 +59,9 @@ export default function SignUpScreen() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    const sub = Linking.addEventListener("url", (event) => {
-      const code = event.url.match(/code=([^&]+)/)?.[1];
-      if (code) {
-        supabase.auth.exchangeCodeForSession(code);
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
   const handleGoogleSignUp = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: googleRedirectUri },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, googleRedirectUri);
-        if (result.type === "success" && result.url) {
-          const code = result.url.match(/code=([^&]+)/)?.[1];
-          if (code) {
-            await supabase.auth.exchangeCodeForSession(code);
-          }
-        }
-      }
-    } catch {
+    const { error } = await signInWithGoogle();
+    if (error) {
       setErrors({ email: "Daftar Google gagal" });
     }
   };

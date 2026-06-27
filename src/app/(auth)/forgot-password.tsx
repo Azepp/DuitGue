@@ -25,7 +25,7 @@ export default function ForgotPasswordScreen() {
     const { error: sendError } = await supabase.auth.resetPasswordForEmail(email.trim());
 
     if (sendError) {
-      setError(sendError.message);
+      setError('Gagal kirim link reset. Coba lagi nanti.');
     } else {
       showToast(`Link reset password udah dikirim ke ${email.trim()}`, 'success', 4000);
       setEmail('');

@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { signOutGoogle } from '@/lib/google-signin';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
 import { ThemedText } from '@/components/themed-text';
@@ -46,6 +47,8 @@ export default function EditProfileScreen() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deletePasswordError, setDeletePasswordError] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -119,7 +122,11 @@ export default function EditProfileScreen() {
     setAvatarUploading(true);
     try {
       const ext = asset.uri.split('.').pop() ?? 'jpg';
-      const filePath = `avatars/${userId}/${Date.now()}.${ext}`;
+      const randomId = Math.random().toString(36).substring(2, 10);
+      const filePath = `avatars/${userId}/${Date.now()}-${randomId}.${ext}`;
+
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+      const contentType = allowedMimeTypes.includes(asset.mimeType ?? '') ? asset.mimeType! : 'image/jpeg';
 
       const response = await fetch(asset.uri);
       const blob = await response.blob();
@@ -127,8 +134,7 @@ export default function EditProfileScreen() {
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, blob, {
-          contentType: asset.mimeType ?? 'image/jpeg',
-          upsert: true,
+          contentType,
         });
 
       if (uploadError) throw uploadError;
@@ -154,18 +160,32 @@ export default function EditProfileScreen() {
   };
 
   const handleDeleteAccount = async () => {
+    setDeletePasswordError('');
     setDeletingAccount(true);
     try {
+      const email = session?.user?.email;
+      if (!email) throw new Error('Gak bisa verifikasi akun');
+
+      const { error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password: deletePassword,
+      });
+      if (authError) {
+        setDeletePasswordError('Password salah');
+        return;
+      }
+
       const { error } = await supabase.functions.invoke('delete-account');
       if (error) throw new Error(error.message || 'Gagal menghapus akun');
       showToast('Akun berhasil dihapus', 'success');
-      await supabase.auth.signOut();
+      await Promise.all([supabase.auth.signOut(), signOutGoogle()]);
     } catch (err: any) {
       showToast(err?.message || 'Gagal menghapus akun. Coba lagi nanti.', 'error');
     } finally {
       setDeletingAccount(false);
       setDeleteModalVisible(false);
       setDeleteConfirmText('');
+      setDeletePassword('');
     }
   };
 
@@ -184,7 +204,7 @@ export default function EditProfileScreen() {
   }
 
   const avatarUrl = profile?.avatar_url;
-  const canDelete = deleteConfirmText.toLowerCase() === 'hapus akun saya';
+  const canDelete = deleteConfirmText.toLowerCase() === 'hapus akun saya' && deletePassword.length > 0;
 
   return (
     <PageLayout>
@@ -328,6 +348,20 @@ export default function EditProfileScreen() {
               placeholderTextColor={Colors.gray}
               autoCapitalize="none"
             />
+            <TextInput
+              style={[styles.deleteInput, { marginTop: 8 }]}
+              value={deletePassword}
+              onChangeText={(v) => { setDeletePassword(v); setDeletePasswordError(''); }}
+              placeholder="masukin password lu"
+              placeholderTextColor={Colors.gray}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            {deletePasswordError ? (
+              <ThemedText type="small" style={{ color: Colors.danger, marginTop: 4 }}>
+                {deletePasswordError}
+              </ThemedText>
+            ) : null}
             <View style={styles.deleteActions}>
               <Pressable
                 style={styles.cancelBtn}

@@ -286,6 +286,7 @@ export function AddModalProvider({
           placeholder="Cth: Makan siang di warteg"
           value={note}
           onChangeText={setNote}
+          maxLength={200}
         />
       </View>
 

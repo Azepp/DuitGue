@@ -1,4 +1,3 @@
-import * as Linking from "expo-linking";
 import { ThemedText } from "@/components/themed-text";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoInput } from "@/components/ui/neo-input";
@@ -6,13 +5,9 @@ import { PageLayout } from "@/components/ui/page-layout";
 import { Colors } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Link } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Image, Keyboard, StyleSheet, TouchableWithoutFeedback, View } from "react-native";
-
-WebBrowser.maybeCompleteAuthSession();
-
-const googleRedirectUri = Linking.createURL("/");
+import { signInWithGoogle } from "@/lib/google-signin";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -46,33 +41,9 @@ export default function LoginScreen() {
     isSubmitting.current = false;
   };
 
-  useEffect(() => {
-    const sub = Linking.addEventListener("url", (event) => {
-      const code = event.url.match(/code=([^&]+)/)?.[1];
-      if (code) {
-        supabase.auth.exchangeCodeForSession(code);
-      }
-    });
-    return () => sub.remove();
-  }, []);
-
   const handleGoogleLogin = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: googleRedirectUri },
-      });
-      if (error) throw error;
-      if (data?.url) {
-        const result = await WebBrowser.openAuthSessionAsync(data.url, googleRedirectUri);
-        if (result.type === "success" && result.url) {
-          const code = result.url.match(/code=([^&]+)/)?.[1];
-          if (code) {
-            await supabase.auth.exchangeCodeForSession(code);
-          }
-        }
-      }
-    } catch {
+    const { error } = await signInWithGoogle();
+    if (error) {
       setErrors({ password: "Login Google gagal" });
     }
   };

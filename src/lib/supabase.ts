@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { CryptoDigestAlgorithm, digestStringAsync, getRandomBytes } from 'expo-crypto';
 import * as Linking from 'expo-linking';
+import { mmkvStorage } from './mmkv';
 
 if (!globalThis.crypto) {
   // @ts-ignore
@@ -42,5 +43,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
+    storage: mmkvStorage,
   },
 });

@@ -19,7 +19,7 @@ export default function ResetPasswordScreen() {
   const validate = () => {
     const e: typeof errors = {};
     if (!password) e.password = 'Password harus diisi';
-    else if (password.length < 6) e.password = 'Minimal 6 karakter';
+    else if (password.length < 8) e.password = 'Minimal 8 karakter';
     if (!confirmPassword) e.confirmPassword = 'Konfirmasi password harus diisi';
     else if (password !== confirmPassword) e.confirmPassword = 'Password gak cocok';
     setErrors(e);
@@ -33,7 +33,7 @@ export default function ResetPasswordScreen() {
     const { error } = await supabase.auth.updateUser({ password });
 
     if (error) {
-      setErrors({ password: error.message });
+      setErrors({ password: 'Gagal mengubah password. Coba lagi nanti.' });
     } else {
       showToast('Password berhasil diubah', 'success');
       router.replace('/login');

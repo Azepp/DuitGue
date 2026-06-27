@@ -68,7 +68,7 @@ export default function ChangeEmailScreen() {
         email: newEmail.trim(),
       });
       if (updateError) {
-        setErrors({ newEmail: updateError.message });
+        setErrors({ newEmail: 'Gagal kirim link verifikasi. Coba lagi nanti.' });
         return;
       }
 

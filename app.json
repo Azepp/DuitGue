@@ -10,20 +10,20 @@
     "ios": {
       "icon": "./assets/images/icon.png",
       "supportsTablet": true,
-      "bundleIdentifier": "com.asepexpo.DuitGue",
+      "bundleIdentifier": "com.duitgue",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "softwareKeyboardLayoutMode": "pan",
-      "icon": "/assets/images/logo.png",
+      "icon": "./assets/images/icon.png",
       "adaptiveIcon": {
         "backgroundColor": "#F5C518",
         "foregroundImage": "./assets/images/adaptive-icon.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.asepexpo.DuitGue"
+      "package": "com.duitgue"
     },
     "web": {
       "output": "single",
@@ -51,6 +51,7 @@
       "expo-font",
       "expo-web-browser",
       "@react-native-community/datetimepicker",
+      "@react-native-google-signin/google-signin",
       "expo-updates",
       "expo-image"
     ],

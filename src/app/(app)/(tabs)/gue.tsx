@@ -8,6 +8,7 @@ import * as Sharing from 'expo-sharing';
 import { ThemedText } from '@/components/themed-text';
 import { PageLayout } from '@/components/ui/page-layout';
 import { supabase } from '@/lib/supabase';
+import { signOutGoogle } from '@/lib/google-signin';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
 import { Colors } from '@/constants/theme';
@@ -42,7 +43,7 @@ export default function GueScreen() {
 
   const handleLogout = async () => {
     setLoading(true);
-    await supabase.auth.signOut();
+    await Promise.all([supabase.auth.signOut(), signOutGoogle()]);
   };
 
   const handleExport = async () => {

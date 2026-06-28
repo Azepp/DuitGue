@@ -53,7 +53,16 @@
       "@react-native-community/datetimepicker",
       "@react-native-google-signin/google-signin",
       "expo-updates",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

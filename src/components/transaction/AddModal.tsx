@@ -67,17 +67,20 @@ function NumpadButton({
   return (
     <View style={styles.numpadBtnShadow}>
       <View style={styles.numpadBtnShadowFill} pointerEvents="none" />
-      <TouchableOpacity
-        style={[styles.numpadBtn, danger && styles.numpadBtnDanger]}
+      <Pressable
+        style={({ pressed }) => [
+          styles.numpadBtn,
+          danger && styles.numpadBtnDanger,
+          pressed && { transform: [{ translateX: 2 }, { translateY: 2 }], shadowOpacity: 0 },
+        ]}
         onPress={onPress}
-        activeOpacity={0.8}
       >
         {icon ? (
           <MaterialCommunityIcons name={icon} size={24} color={danger ? Colors.white : Colors.black} />
         ) : (
           <Text style={[styles.numpadBtnText, danger && { color: Colors.white }]}>{label}</Text>
         )}
-      </TouchableOpacity>
+      </Pressable>
     </View>
   );
 }

@@ -176,11 +176,11 @@ export default function SearchScreen() {
           <View style={styles.toggleShadow} pointerEvents="none" />
           <View style={styles.toggleContainer}>
             <TouchableOpacity
-              style={[styles.toggleChip, styles.toggleChipLeft, typeFilter === 'semua' && { backgroundColor: Colors.black }]}
+              style={[styles.toggleChip, styles.toggleChipLeft, typeFilter === 'semua' && { backgroundColor: Colors.primary }]}
               onPress={() => setTypeFilter('semua')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, typeFilter === 'semua' && styles.toggleTextActive]}>Semua</Text>
+              <Text style={[styles.toggleText, typeFilter === 'semua' && { color: Colors.black }]}>Semua</Text>
             </TouchableOpacity>
             <View style={styles.toggleDivider} />
             <TouchableOpacity

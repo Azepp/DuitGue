@@ -18,9 +18,10 @@ import { useToast } from '@/components/ui/toast';
 type BugReportModalProps = {
   visible: boolean;
   onClose: () => void;
+  userEmail?: string;
 };
 
-export function BugReportModal({ visible, onClose }: BugReportModalProps) {
+export function BugReportModal({ visible, onClose, userEmail }: BugReportModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [sending, setSending] = useState(false);
@@ -37,6 +38,7 @@ export function BugReportModal({ visible, onClose }: BugReportModalProps) {
         body: {
           title: title.trim(),
           description: description.trim(),
+          userEmail,
         },
       });
 
@@ -76,7 +78,7 @@ export function BugReportModal({ visible, onClose }: BugReportModalProps) {
             <TextInput
               style={styles.input}
               placeholderTextColor={Colors.gray}
-              placeholder="Contoh: Numpad error pas input nominal..."
+              placeholder="Contoh: Gabisa logout..."
               value={title}
               onChangeText={setTitle}
               maxLength={100}
@@ -100,13 +102,16 @@ export function BugReportModal({ visible, onClose }: BugReportModalProps) {
           </View>
 
           <View style={styles.actions}>
-            <Pressable
-              style={styles.cancelBtn}
-              onPress={onClose}
-              disabled={sending}
-            >
-              <ThemedText style={styles.cancelText}>Batal</ThemedText>
-            </Pressable>
+            <View style={styles.cancelOuter}>
+              <View style={styles.cancelShadow} pointerEvents="none" />
+              <Pressable
+                style={styles.cancelBtn}
+                onPress={onClose}
+                disabled={sending}
+              >
+                <ThemedText style={styles.cancelText}>Batal</ThemedText>
+              </Pressable>
+            </View>
 
             <View style={styles.sendOuter}>
               <View style={styles.sendShadow} pointerEvents="none" />
@@ -211,8 +216,24 @@ const styles = StyleSheet.create({
     gap: Spacing.twoHalf,
     marginTop: Spacing.two,
   },
-  cancelBtn: {
+  cancelOuter: {
     flex: 1,
+    position: 'relative',
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+  },
+  cancelShadow: {
+    position: 'absolute',
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  cancelBtn: {
     borderWidth: 2,
     borderColor: Colors.black,
     borderRadius: 10,
@@ -251,7 +272,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
   },
   sendBtnDisabled: {
-    opacity: 0.5,
+    backgroundColor: Colors.gray,
   },
   sendText: {
     fontSize: 14,

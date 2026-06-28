@@ -179,6 +179,7 @@ export default function GueScreen() {
       <BugReportModal
         visible={bugModalVisible}
         onClose={() => setBugModalVisible(false)}
+        userEmail={user?.email}
       />
     </PageLayout>
   );

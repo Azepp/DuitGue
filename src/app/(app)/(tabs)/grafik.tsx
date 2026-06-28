@@ -1,17 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Animated, PanResponder, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors, Spacing } from "@/constants/theme";
 import { useTransactionSummary, usePeriodOptions } from "@/hooks/useTransactionSummary";
-import {
-  TabSwitcher,
-  PeriodFilter,
-  PeriodValueSelector,
-  CustomDonutChart,
-  CategoryProgressBar,
-  CategoryTooltip,
-} from "@/components/charts";
+import { TabSwitcher, PeriodFilter, PeriodValueSelector, CustomDonutChart, CategoryProgressBar, CategoryTooltip } from "@/components/charts";
 import type { TransactionType, PeriodType, CategorySummary } from "@/types/grafik";
 
 export default function GrafikScreen() {
@@ -23,6 +16,35 @@ export default function GrafikScreen() {
 
   const { data: periodOptions } = usePeriodOptions(periodType);
   const resolvedOptions = periodOptions ?? [];
+
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const txTypeRef = useRef(txType);
+  txTypeRef.current = txType;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dx) > 10 && Math.abs(gs.dy) < 15,
+      onPanResponderMove: (_, gs) => {
+        slideAnim.setValue(gs.dx);
+      },
+      onPanResponderRelease: (_, gs) => {
+        const threshold = 50;
+        const current = txTypeRef.current;
+        if (gs.dx < -threshold && current === "expense") {
+          setTxType("income");
+          setTooltip(null);
+        } else if (gs.dx > threshold && current === "income") {
+          setTxType("expense");
+          setTooltip(null);
+        }
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }).start();
+      },
+    }),
+  ).current;
 
   const currentPeriodValue = useMemo(() => {
     const now = new Date();
@@ -105,7 +127,12 @@ export default function GrafikScreen() {
           onChange={handlePeriodValueChange}
         />
 
-        <View ref={chartRef} collapsable={false} style={styles.chartSection}>
+        <Animated.View
+          ref={chartRef}
+          collapsable={false}
+          style={[styles.chartSection, { transform: [{ translateX: slideAnim }] }]}
+          {...panResponder.panHandlers}
+        >
           {isLoading ? (
             <View style={styles.loadingState}>
               <View style={styles.skeleton}>
@@ -125,7 +152,7 @@ export default function GrafikScreen() {
               onSliceTap={handleSliceTap}
             />
           )}
-        </View>
+        </Animated.View>
 
         {!isLoading && categories.length > 0 && (
           <View style={styles.listSection}>

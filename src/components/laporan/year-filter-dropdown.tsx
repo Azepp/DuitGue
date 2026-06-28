@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors, Spacing } from "@/constants/theme";
 
@@ -14,20 +14,12 @@ const SHADOW_OFFSET = 3;
 export function YearFilterDropdown({ years, selectedYear, onSelect }: YearFilterDropdownProps) {
   const [open, setOpen] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const [buttonRect, setButtonRect] = useState({ x: 0, y: 0, width: 0, height: 0 });
-  const buttonRef = useRef<View>(null);
-
-  const handleLayout = useCallback(() => {
-    buttonRef.current?.measureInWindow((x, y, width, height) => {
-      setButtonRect({ x, y, width, height });
-    });
-  }, []);
 
   const label = selectedYear === "all" ? "Semua" : selectedYear;
 
   return (
-    <View>
-      <View style={styles.outer} ref={buttonRef} onLayout={handleLayout}>
+    <View style={styles.wrapper}>
+      <View style={styles.outer}>
         <View style={styles.shadow} pointerEvents="none" />
         <Pressable
           onPress={() => setOpen(!open)}
@@ -45,63 +37,51 @@ export function YearFilterDropdown({ years, selectedYear, onSelect }: YearFilter
       </View>
 
       {open && (
-        <Modal transparent animationType="none" onRequestClose={() => setOpen(false)}>
-          <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
-            <View
-              style={[
-                styles.dropdown,
-                {
-                  position: "absolute",
-                  top: buttonRect.y + buttonRect.height + 4,
-                  right: Spacing.pageX,
-                },
-              ]}
+        <>
+          <Pressable style={styles.backdrop} onPress={() => setOpen(false)} />
+          <View style={styles.dropdown}>
+            <TouchableOpacity
+              style={[styles.item, selectedYear === "all" && styles.itemSelected]}
+              onPress={() => { onSelect("all"); setOpen(false); }}
+              activeOpacity={0.7}
             >
+              <Text style={[styles.itemText, selectedYear === "all" && styles.itemTextSelected]}>
+                Semua
+              </Text>
+              {selectedYear === "all" && (
+                <MaterialCommunityIcons name="check" size={16} color={Colors.black} />
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.separator} />
+
+            {years.map((year) => (
               <TouchableOpacity
-                style={[styles.item, selectedYear === "all" && styles.itemSelected]}
-                onPress={() => {
-                  onSelect("all");
-                  setOpen(false);
-                }}
+                key={year}
+                style={[styles.item, selectedYear === year && styles.itemSelected]}
+                onPress={() => { onSelect(year); setOpen(false); }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.itemText, selectedYear === "all" && styles.itemTextSelected]}>
-                  Semua
+                <Text style={[styles.itemText, selectedYear === year && styles.itemTextSelected]}>
+                  {year}
                 </Text>
-                {selectedYear === "all" && (
+                {selectedYear === year && (
                   <MaterialCommunityIcons name="check" size={16} color={Colors.black} />
                 )}
               </TouchableOpacity>
-
-              <View style={styles.separator} />
-
-              {years.map((year) => (
-                <TouchableOpacity
-                  key={year}
-                  style={[styles.item, selectedYear === year && styles.itemSelected]}
-                  onPress={() => {
-                    onSelect(year);
-                    setOpen(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.itemText, selectedYear === year && styles.itemTextSelected]}>
-                    {year}
-                  </Text>
-                  {selectedYear === year && (
-                    <MaterialCommunityIcons name="check" size={16} color={Colors.black} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </View>
-          </Pressable>
-        </Modal>
+            ))}
+          </View>
+        </>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    position: "relative",
+    zIndex: 999,
+  },
   outer: {
     position: "relative",
     paddingRight: SHADOW_OFFSET,
@@ -139,9 +119,14 @@ const styles = StyleSheet.create({
     color: Colors.black,
   },
   backdrop: {
-    flex: 1,
+    position: "absolute",
+    inset: 0,
+    zIndex: 998,
   },
   dropdown: {
+    position: "absolute",
+    top: 48,
+    right: 0,
     backgroundColor: Colors.white,
     borderWidth: 2,
     borderColor: Colors.black,
@@ -152,6 +137,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 10,
+    zIndex: 999,
   },
   separator: {
     height: 1,

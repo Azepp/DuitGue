@@ -17,7 +17,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { NeoInput } from '@/components/ui/neo-input';
 import { NeoDatePicker } from '@/components/ui/date-picker';
 import { Colors, Spacing } from '@/constants/theme';
-import { formatRupiah } from '@/lib/utils';
+
+const formatNumber = (n: number) => {
+  const s = n.toString();
+  return s.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
 
 type Category = {
   id: string;
@@ -95,6 +99,8 @@ export function AddModalProvider({
   const [visible, setVisible] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
   const [amount, setAmount] = useState(0);
+  const [pendingAmount, setPendingAmount] = useState<number | null>(null);
+  const [operation, setOperation] = useState<'add' | 'sub' | null>(null);
   const [note, setNote] = useState('');
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -105,9 +111,13 @@ export function AddModalProvider({
 
   const sheetTranslateY = useRef(new Animated.Value(screenHeight)).current;
 
+  const isCalcMode = pendingAmount !== null && operation !== null;
+
   const open = useCallback((cat: Category, editTx?: { id: string; amount: number; note: string; date: string }) => {
     setCategory(cat);
     setAmount(editTx?.amount ?? 0);
+    setPendingAmount(null);
+    setOperation(null);
     setNote(editTx?.note ?? '');
     setDate(editTx?.date ? new Date(editTx.date + 'T00:00:00') : new Date());
     setIsEdit(!!editTx);
@@ -124,11 +134,19 @@ export function AddModalProvider({
   }, [sheetTranslateY, screenHeight]);
 
   const close = useCallback(() => {
-    setVisible(false);
-    setCategory(null);
-    setIsEdit(false);
-    setEditId(null);
-  }, []);
+    Animated.timing(sheetTranslateY, {
+      toValue: screenHeight,
+      duration: 200,
+      useNativeDriver: true,
+    }).start(() => {
+      setVisible(false);
+      setCategory(null);
+      setIsEdit(false);
+      setEditId(null);
+      setPendingAmount(null);
+      setOperation(null);
+    });
+  }, [sheetTranslateY, screenHeight]);
 
   const handleSwipeMove = useCallback((dy: number) => {
     if (dy > 0) {
@@ -139,11 +157,7 @@ export function AddModalProvider({
   const handleSwipeRelease = useCallback((dy: number, vy: number) => {
     const threshold = 100;
     if (dy > threshold || vy > 0.5) {
-      Animated.timing(sheetTranslateY, {
-        toValue: screenHeight,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => close());
+      close();
     } else {
       Animated.spring(sheetTranslateY, {
         toValue: 0,
@@ -152,12 +166,12 @@ export function AddModalProvider({
         stiffness: 200,
       }).start();
     }
-  }, [close, sheetTranslateY, screenHeight]);
+  }, [close, sheetTranslateY]);
 
   const sheetPanResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5,
+      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 15 && Math.abs(gs.dx) < 10,
       onPanResponderMove: (_, gs) => handleSwipeMove(gs.dy),
       onPanResponderRelease: (_, gs) => handleSwipeRelease(gs.dy, gs.vy),
     }),
@@ -165,20 +179,59 @@ export function AddModalProvider({
 
   const handlePanResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => true,
+      onStartShouldSetPanResponderCapture: () => false,
+      onMoveShouldSetPanResponderCapture: (_, gs) => Math.abs(gs.dy) > 5,
       onPanResponderMove: (_, gs) => handleSwipeMove(gs.dy),
       onPanResponderRelease: (_, gs) => handleSwipeRelease(gs.dy, gs.vy),
     }),
   ).current;
 
+  const amountRef = useRef(amount);
+  amountRef.current = amount;
+  const pendingRef = useRef(pendingAmount);
+  pendingRef.current = pendingAmount;
+  const operationRef = useRef(operation);
+  operationRef.current = operation;
+
   const handleNumpadPress = useCallback(
     (value: string) => {
+      if (value === '+' || value === '-') {
+        const curAmount = amountRef.current;
+        const curPending = pendingRef.current;
+        const curOp = operationRef.current;
+
+        let newPending: number;
+        if (curOp === 'add') newPending = (curPending ?? 0) + curAmount;
+        else if (curOp === 'sub') newPending = (curPending ?? 0) - curAmount;
+        else newPending = curAmount;
+
+        setPendingAmount(newPending);
+        setOperation(value === '+' ? 'add' : 'sub');
+        setAmount(0);
+        return;
+      }
+
+      if (value === '=') {
+        const curAmount = amountRef.current;
+        const curPending = pendingRef.current;
+        const curOp = operationRef.current;
+
+        let result: number;
+        if (curOp === 'add') result = (curPending ?? 0) + curAmount;
+        else if (curOp === 'sub') result = (curPending ?? 0) - curAmount;
+        else result = curAmount;
+
+        setPendingAmount(null);
+        setOperation(null);
+        setAmount(result < 0 ? 0 : result > 999999999 ? 999999999 : result);
+        return;
+      }
+
       setAmount((prev) => {
         if (prev > 999999999) return prev;
 
-        if (value === 'backspace') {
-          return Math.floor(prev / 10);
-        }
+        if (value === 'backspace') return Math.floor(prev / 10);
+        if (value === 'ac') return 0;
 
         if (value === '00') {
           if (prev === 0) return 0;
@@ -190,20 +243,6 @@ export function AddModalProvider({
           if (prev === 0) return 0;
           const next = prev * 1000;
           return next > 999999999 ? prev : next;
-        }
-
-        if (value === '+') {
-          const next = prev + 10000;
-          return next > 999999999 ? prev : next;
-        }
-
-        if (value === '-') {
-          const next = prev - 10000;
-          return next < 0 ? 0 : next;
-        }
-
-        if (value === ',') {
-          return prev;
         }
 
         const digit = parseInt(value, 10);
@@ -271,7 +310,7 @@ export function AddModalProvider({
         { label: '0', value: '0' },
         { label: '00', value: '00' },
         { label: '000', value: '000' },
-        { label: ',', value: ',' },
+        { icon: 'close-circle-outline', value: 'ac', danger: true },
       ],
     ];
 
@@ -295,6 +334,11 @@ export function AddModalProvider({
 
       <View style={styles.amountSection}>
         <Text style={styles.fieldLabel}>Jumlah Duit:</Text>
+        {isCalcMode && (
+          <Text style={styles.pendingText}>
+            {formatNumber(pendingAmount ?? 0)} {operation === 'add' ? '+' : '-'}
+          </Text>
+        )}
         <View style={styles.amountDisplay}>
           <Text
             style={[
@@ -305,7 +349,7 @@ export function AddModalProvider({
             numberOfLines={1}
             adjustsFontSizeToFit
           >
-            {formatRupiah(amount)}
+            {formatNumber(amount)}
           </Text>
         </View>
       </View>
@@ -354,7 +398,7 @@ export function AddModalProvider({
         ))}
       </View>
 
-      {amount <= 0 ? (
+      {amount <= 0 && !isCalcMode ? (
         <TouchableOpacity
           style={[styles.submitBtn, styles.submitBtnDisabled]}
           disabled
@@ -367,10 +411,14 @@ export function AddModalProvider({
           <View style={styles.submitShadowFill} pointerEvents="none" />
           <TouchableOpacity
             style={styles.submitBtn}
-            onPress={handleSubmit}
+            onPress={isCalcMode ? handleNumpadPress.bind(null, '=') : handleSubmit}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitBtnText}>Gaskeun</Text>
+            {isCalcMode ? (
+              <MaterialCommunityIcons name="equal" size={24} color={Colors.black} />
+            ) : (
+              <Text style={styles.submitBtnText}>Gaskeun</Text>
+            )}
           </TouchableOpacity>
         </View>
       )}
@@ -383,14 +431,19 @@ export function AddModalProvider({
       {Platform.OS === 'android' ? (
         visible && (
           <View style={styles.overlayAbsolute}>
-            <Pressable style={{ flex: 1 }} onPress={close} />
-            {sheetContent}
+            <Pressable style={styles.backdropTouch} onPress={close} />
+            <View style={styles.sheetWrapper}>
+              {sheetContent}
+            </View>
           </View>
         )
       ) : (
         <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
           <View style={styles.overlay}>
-            {sheetContent}
+            <Pressable style={styles.backdropTouch} onPress={close} />
+            <View style={styles.sheetWrapper}>
+              {sheetContent}
+            </View>
           </View>
         </Modal>
       )}
@@ -415,6 +468,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'flex-end',
     zIndex: 1000,
+  },
+  backdropTouch: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  sheetWrapper: {
+    zIndex: 1001,
   },
   sheet: {
     backgroundColor: Colors.background,
@@ -447,6 +510,12 @@ const styles = StyleSheet.create({
   },
   amountSection: {
     marginBottom: Spacing.three,
+  },
+  pendingText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    marginBottom: Spacing.half,
   },
   amountDisplay: {
     borderWidth: 3,

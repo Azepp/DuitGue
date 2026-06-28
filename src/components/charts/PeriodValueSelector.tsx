@@ -80,11 +80,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderWidth: 2,
     borderColor: Colors.black,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
   },
   label: {
     fontSize: 13,
     fontWeight: "600",
-    color: "#9CA3AF",
+    color: Colors.textSecondary,
   },
   labelActive: {
     color: Colors.black,

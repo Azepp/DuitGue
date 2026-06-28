@@ -1,37 +1,27 @@
-import { useEffect, useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Stack, router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { z } from 'zod';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import * as FileSystem from "expo-file-system/legacy";
+import * as ImagePicker from "expo-image-picker";
+import { Stack, router } from "expo-router";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { z } from "zod";
 
-import { Colors, Spacing } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
-import { signOutGoogle } from '@/lib/google-signin';
-import { useAuthStore } from '@/stores/auth-store';
-import { useToast } from '@/components/ui/toast';
-import { ThemedText } from '@/components/themed-text';
-import { PageLayout } from '@/components/ui/page-layout';
+import { ThemedText } from "@/components/themed-text";
+import { PageLayout } from "@/components/ui/page-layout";
+import { useToast } from "@/components/ui/toast";
+import { Colors, Spacing } from "@/constants/theme";
+import { signOutGoogle } from "@/lib/google-signin";
+import { supabase } from "@/lib/supabase";
+import { useAuthStore } from "@/stores/auth-store";
 
 const SHADOW_OFFSET = 3;
 
 const editProfileSchema = z.object({
-  display_name: z.string().min(2, 'Nama minimal 2 karakter').max(50, 'Nama maksimal 50 karakter'),
+  display_name: z.string().min(2, "Nama minimal 2 karakter").max(50, "Nama maksimal 50 karakter"),
 });
 
 type EditProfileFormData = z.infer<typeof editProfileSchema>;
@@ -40,25 +30,21 @@ export default function EditProfileScreen() {
   const queryClient = useQueryClient();
   const session = useAuthStore((s) => s.session);
   const userId = session?.user?.id;
-  const userEmail = session?.user?.email ?? '';
+  const userEmail = session?.user?.email ?? "";
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
 
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deletePassword, setDeletePassword] = useState('');
-  const [deletePasswordError, setDeletePasswordError] = useState('');
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deletePasswordError, setDeletePasswordError] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['profile', userId],
+    queryKey: ["profile", userId],
     queryFn: async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('display_name, avatar_url')
-        .eq('id', userId)
-        .single();
+      const { data } = await supabase.from("profiles").select("display_name, avatar_url").eq("id", userId).single();
       return data as { display_name: string; avatar_url: string | null } | null;
     },
     enabled: !!userId,
@@ -72,43 +58,40 @@ export default function EditProfileScreen() {
   } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
-      display_name: '',
+      display_name: "",
     },
   });
 
   useEffect(() => {
     if (profile) {
-      reset({ display_name: profile.display_name ?? '' });
+      reset({ display_name: profile.display_name ?? "" });
     }
   }, [profile, reset]);
 
   const updateMutation = useMutation({
     mutationFn: async (data: { display_name: string }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ display_name: data.display_name.trim() })
-        .eq('id', userId);
+      const { error } = await supabase.from("profiles").update({ display_name: data.display_name.trim() }).eq("id", userId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
-      showToast('Profil berhasil diperbarui', 'success');
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      showToast("Profil berhasil diperbarui", "success");
       router.back();
     },
     onError: (err: Error) => {
-      showToast(err.message || 'Gagal menyimpan profil', 'error');
+      showToast(err.message || "Gagal menyimpan profil", "error");
     },
   });
 
   const handlePickAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Izin diperlukan', 'Aplikasi butuh akses ke galeri buat ganti foto profil.');
+      Alert.alert("Izin diperlukan", "Aplikasi butuh akses ke galeri buat ganti foto profil.");
       return;
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
@@ -121,71 +104,72 @@ export default function EditProfileScreen() {
 
     setAvatarUploading(true);
     try {
-      const ext = asset.uri.split('.').pop() ?? 'jpg';
+      const ext = asset.uri.split(".").pop() ?? "jpg";
       const randomId = Math.random().toString(36).substring(2, 10);
       const filePath = `avatars/${userId}/${Date.now()}-${randomId}.${ext}`;
 
-      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-      const contentType = allowedMimeTypes.includes(asset.mimeType ?? '') ? asset.mimeType! : 'image/jpeg';
+      const allowedMimeTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+      const contentType = allowedMimeTypes.includes(asset.mimeType ?? "") ? asset.mimeType! : "image/jpeg";
 
-      const response = await fetch(asset.uri);
-      const blob = await response.blob();
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const bytes = atob(base64);
+      const array = new Uint8Array(bytes.length);
+      for (let i = 0; i < bytes.length; i++) {
+        array[i] = bytes.charCodeAt(i);
+      }
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, blob, {
-          contentType,
-        });
+      const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, array, {
+        contentType,
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(filePath);
       const publicUrl = urlData?.publicUrl;
-      if (!publicUrl) throw new Error('Gagal mendapatkan URL avatar');
+      if (!publicUrl) throw new Error("Gagal mendapatkan URL avatar");
 
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', userId);
+      const { error: updateError } = await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", userId);
 
       if (updateError) throw updateError;
 
-      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
-      showToast('Foto profil berhasil diperbarui', 'success');
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      showToast("Foto profil berhasil diperbarui", "success");
     } catch (err: any) {
-      showToast(err?.message || 'Gagal mengupload foto', 'error');
+      showToast(err?.message || "Gagal mengupload foto", "error");
     } finally {
       setAvatarUploading(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    setDeletePasswordError('');
+    setDeletePasswordError("");
     setDeletingAccount(true);
     try {
       const email = session?.user?.email;
-      if (!email) throw new Error('Gak bisa verifikasi akun');
+      if (!email) throw new Error("Gak bisa verifikasi akun");
 
       const { error: authError } = await supabase.auth.signInWithPassword({
         email,
         password: deletePassword,
       });
       if (authError) {
-        setDeletePasswordError('Password salah');
+        setDeletePasswordError("Password salah");
         return;
       }
 
-      const { error } = await supabase.functions.invoke('delete-account');
-      if (error) throw new Error(error.message || 'Gagal menghapus akun');
-      showToast('Akun berhasil dihapus', 'success');
+      const { error } = await supabase.functions.invoke("delete-account");
+      if (error) throw new Error(error.message || "Gagal menghapus akun");
+      showToast("Akun berhasil dihapus", "success");
       await Promise.all([supabase.auth.signOut(), signOutGoogle()]);
     } catch (err: any) {
-      showToast(err?.message || 'Gagal menghapus akun. Coba lagi nanti.', 'error');
+      showToast(err?.message || "Gagal menghapus akun. Coba lagi nanti.", "error");
     } finally {
       setDeletingAccount(false);
       setDeleteModalVisible(false);
-      setDeleteConfirmText('');
-      setDeletePassword('');
+      setDeleteConfirmText("");
+      setDeletePassword("");
     }
   };
 
@@ -204,7 +188,7 @@ export default function EditProfileScreen() {
   }
 
   const avatarUrl = profile?.avatar_url;
-  const canDelete = deleteConfirmText.toLowerCase() === 'hapus akun saya' && deletePassword.length > 0;
+  const canDelete = deleteConfirmText.toLowerCase() === "hapus akun saya" && deletePassword.length > 0;
 
   return (
     <PageLayout>
@@ -229,11 +213,7 @@ export default function EditProfileScreen() {
               {avatarUploading ? (
                 <ActivityIndicator size="large" color={Colors.black} />
               ) : avatarUrl ? (
-                <View style={styles.avatarImageContainer}>
-                  <View style={styles.avatarPlaceholder}>
-                    <MaterialCommunityIcons name="account" size={40} color={Colors.black} />
-                  </View>
-                </View>
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
               ) : (
                 <MaterialCommunityIcons name="account" size={40} color={Colors.black} />
               )}
@@ -258,16 +238,7 @@ export default function EditProfileScreen() {
               render={({ field: { onChange, onBlur, value } }) => (
                 <View style={styles.inputOuter}>
                   <View style={styles.inputShadow} pointerEvents="none" />
-                  <TextInput
-                    style={styles.input}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="lu punya nama panggilan..."
-                    placeholderTextColor={Colors.gray}
-                    autoCapitalize="words"
-                    autoComplete="name"
-                  />
+                  <TextInput style={styles.input} value={value} onChangeText={onChange} onBlur={onBlur} placeholder="lu punya nama panggilan..." placeholderTextColor={Colors.gray} autoCapitalize="words" autoComplete="name" />
                 </View>
               )}
             />
@@ -281,8 +252,8 @@ export default function EditProfileScreen() {
           <View style={styles.fieldGroup}>
             <View style={styles.emailHeader}>
               <ThemedText type="smallBold">Email lu</ThemedText>
-              <Pressable onPress={() => router.push('/profile/change-email')}>
-                <ThemedText type="small" style={{ color: Colors.black, textDecorationLine: 'underline' }}>
+              <Pressable onPress={() => router.push("/profile/change-email")}>
+                <ThemedText type="small" style={{ color: Colors.black, textDecorationLine: "underline" }}>
                   Ganti Email?
                 </ThemedText>
               </Pressable>
@@ -298,20 +269,9 @@ export default function EditProfileScreen() {
         <View style={styles.actions}>
           <View style={styles.submitOuter}>
             <View style={styles.submitShadow} pointerEvents="none" />
-            <Pressable
-              style={[
-                styles.submitBtn,
-                (!isDirty || isSubmitting || updateMutation.isPending) && styles.submitBtnDisabled,
-              ]}
-              onPress={handleSubmit(onSubmit)}
-              disabled={!isDirty || isSubmitting || updateMutation.isPending}
-            >
-              {updateMutation.isPending ? (
-                <ActivityIndicator size="small" color={Colors.black} />
-              ) : null}
-              <ThemedText style={styles.submitText}>
-                {updateMutation.isPending ? 'Menyimpan...' : 'Simpan Perubahan'}
-              </ThemedText>
+            <Pressable style={[styles.submitBtn, (!isDirty || isSubmitting || updateMutation.isPending) && styles.submitBtnDisabled]} onPress={handleSubmit(onSubmit)} disabled={!isDirty || isSubmitting || updateMutation.isPending}>
+              {updateMutation.isPending ? <ActivityIndicator size="small" color={Colors.black} /> : null}
+              <ThemedText style={styles.submitText}>{updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}</ThemedText>
             </Pressable>
           </View>
 
@@ -319,10 +279,7 @@ export default function EditProfileScreen() {
 
           <View style={styles.deleteOuter}>
             <View style={styles.deleteShadow} pointerEvents="none" />
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={() => setDeleteModalVisible(true)}
-            >
+            <Pressable style={styles.deleteBtn} onPress={() => setDeleteModalVisible(true)}>
               <MaterialCommunityIcons name="trash-can-outline" size={20} color={Colors.white} />
               <ThemedText style={styles.deleteText}>Hapus Akun</ThemedText>
             </Pressable>
@@ -334,55 +291,49 @@ export default function EditProfileScreen() {
         <View style={styles.backdrop}>
           <View style={styles.deleteCard}>
             <ThemedText style={styles.deleteCardTitle}>Hapus Akun</ThemedText>
-            <ThemedText style={styles.deleteCardMessage}>
-              Aksi ini gak bisa dibatalin, semua data transaksi lu akan hilang permanen.
-            </ThemedText>
+            <ThemedText style={styles.deleteCardMessage}>Aksi ini gak bisa dibatalin, semua data transaksi lu akan hilang permanen.</ThemedText>
             <ThemedText type="small" style={{ marginBottom: 8, marginTop: 4 }}>
-              Ketik "<Text style={{ fontWeight: 700 }}>hapus akun saya</Text>" buat konfirmasi
+              Masukin password lu buat konfirmasi hapus akun
             </ThemedText>
-            <TextInput
-              style={styles.deleteInput}
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              placeholder="hapus akun saya"
-              placeholderTextColor={Colors.gray}
-              autoCapitalize="none"
-            />
-            <TextInput
-              style={[styles.deleteInput, { marginTop: 8 }]}
-              value={deletePassword}
-              onChangeText={(v) => { setDeletePassword(v); setDeletePasswordError(''); }}
-              placeholder="masukin password lu"
-              placeholderTextColor={Colors.gray}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+            <View style={styles.inputOuter}>
+              <View style={styles.inputShadow} pointerEvents="none" />
+              <TextInput
+                style={styles.deleteInput}
+                value={deletePassword}
+                onChangeText={(v) => {
+                  setDeletePassword(v);
+                  setDeletePasswordError("");
+                }}
+                placeholder="masukin password lu"
+                placeholderTextColor={Colors.gray}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            </View>
             {deletePasswordError ? (
               <ThemedText type="small" style={{ color: Colors.danger, marginTop: 4 }}>
                 {deletePasswordError}
               </ThemedText>
             ) : null}
             <View style={styles.deleteActions}>
-              <Pressable
-                style={styles.cancelBtn}
-                onPress={() => {
-                  setDeleteModalVisible(false);
-                  setDeleteConfirmText('');
-                }}
-              >
-                <ThemedText style={styles.cancelBtnText}>Batal</ThemedText>
-              </Pressable>
-              <Pressable
-                style={[styles.confirmDeleteBtn, !canDelete && styles.confirmDeleteBtnDisabled]}
-                onPress={handleDeleteAccount}
-                disabled={!canDelete || deletingAccount}
-              >
-                {deletingAccount ? (
-                  <ActivityIndicator size="small" color={Colors.white} />
-                ) : (
-                  <ThemedText style={styles.confirmDeleteText}>Ya, Hapus</ThemedText>
-                )}
-              </Pressable>
+              <View style={styles.cancelOuter}>
+                <View style={styles.cancelShadow} pointerEvents="none" />
+                <Pressable
+                  style={styles.cancelBtn}
+                  onPress={() => {
+                    setDeleteModalVisible(false);
+                    setDeleteConfirmText("");
+                  }}
+                >
+                  <ThemedText style={styles.cancelBtnText}>Batal</ThemedText>
+                </Pressable>
+              </View>
+              <View style={styles.confirmDeleteOuter}>
+                <View style={styles.confirmDeleteShadow} pointerEvents="none" />
+                <Pressable style={[styles.confirmDeleteBtn, !canDelete && styles.confirmDeleteBtnDisabled]} onPress={handleDeleteAccount} disabled={!canDelete || deletingAccount}>
+                  {deletingAccount ? <ActivityIndicator size="small" color={Colors.white} /> : <ThemedText style={styles.confirmDeleteText}>Ya, Hapus</ThemedText>}
+                </Pressable>
+              </View>
             </View>
           </View>
         </View>
@@ -394,43 +345,43 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   scroll: {
     paddingBottom: 32,
   },
   headerBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: Spacing.pageX,
     paddingVertical: Spacing.three,
     backgroundColor: Colors.background,
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
   },
   gajadiText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
   avatarSection: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 28,
     marginTop: 8,
   },
   avatarOuter: {
-    position: 'relative',
+    position: "relative",
     paddingRight: SHADOW_OFFSET,
     paddingBottom: SHADOW_OFFSET,
   },
   avatarShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: SHADOW_OFFSET,
     left: SHADOW_OFFSET,
     right: 0,
@@ -447,30 +398,24 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.black,
     backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
-  avatarImageContainer: {
-    width: '100%',
-    height: '100%',
-  },
-  avatarPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 14,
   },
   badgeOuter: {
-    position: 'absolute',
+    position: "absolute",
     bottom: -2,
     right: -2,
     paddingRight: 2,
     paddingBottom: 2,
   },
   badgeShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     left: 2,
     right: 0,
@@ -487,8 +432,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderWidth: 2,
     borderColor: Colors.black,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   form: {
     gap: 20,
@@ -501,12 +446,12 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   inputOuter: {
-    position: 'relative',
+    position: "relative",
     paddingRight: SHADOW_OFFSET,
     paddingBottom: SHADOW_OFFSET,
   },
   inputShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: SHADOW_OFFSET,
     left: SHADOW_OFFSET,
     right: 0,
@@ -541,21 +486,21 @@ const styles = StyleSheet.create({
     color: Colors.gray,
   },
   emailHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 2,
   },
   actions: {
     gap: 20,
   },
   submitOuter: {
-    position: 'relative',
+    position: "relative",
     paddingRight: SHADOW_OFFSET,
     paddingBottom: SHADOW_OFFSET,
   },
   submitShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: SHADOW_OFFSET,
     left: SHADOW_OFFSET,
     right: 0,
@@ -566,9 +511,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.black,
   },
   submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     backgroundColor: Colors.primary,
     borderWidth: 2,
@@ -581,7 +526,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
   },
   divider: {
@@ -589,12 +534,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.black,
   },
   deleteOuter: {
-    position: 'relative',
+    position: "relative",
     paddingRight: SHADOW_OFFSET,
     paddingBottom: SHADOW_OFFSET,
   },
   deleteShadow: {
-    position: 'absolute',
+    position: "absolute",
     top: SHADOW_OFFSET,
     left: SHADOW_OFFSET,
     right: 0,
@@ -605,9 +550,9 @@ const styles = StyleSheet.create({
     borderColor: Colors.black,
   },
   deleteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     backgroundColor: Colors.danger,
     borderWidth: 2,
@@ -617,14 +562,14 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
   },
   backdrop: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   deleteCard: {
     width: 300,
@@ -641,13 +586,13 @@ const styles = StyleSheet.create({
   },
   deleteCardTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
     marginBottom: Spacing.two,
   },
   deleteCardMessage: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: Colors.black,
     lineHeight: 20,
     marginBottom: Spacing.two,
@@ -661,33 +606,64 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.black,
     backgroundColor: Colors.white,
-    marginBottom: Spacing.three,
   },
   deleteActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: Spacing.twoHalf,
   },
-  cancelBtn: {
+  cancelOuter: {
     flex: 1,
+    position: "relative",
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+  },
+  cancelShadow: {
+    position: "absolute",
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  cancelBtn: {
     borderWidth: 2,
     borderColor: Colors.black,
     borderRadius: 10,
     paddingVertical: Spacing.twoHalf,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: Colors.white,
   },
   cancelBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.black,
   },
-  confirmDeleteBtn: {
+  confirmDeleteOuter: {
     flex: 1,
+    position: "relative",
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+  },
+  confirmDeleteShadow: {
+    position: "absolute",
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  confirmDeleteBtn: {
     borderWidth: 2,
     borderColor: Colors.black,
     borderRadius: 10,
     paddingVertical: Spacing.twoHalf,
-    alignItems: 'center',
+    alignItems: "center",
     backgroundColor: Colors.danger,
   },
   confirmDeleteBtnDisabled: {
@@ -695,7 +671,7 @@ const styles = StyleSheet.create({
   },
   confirmDeleteText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     color: Colors.white,
   },
 });

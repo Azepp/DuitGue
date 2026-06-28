@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabase';
 import { signOutGoogle } from '@/lib/google-signin';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
+import { BugReportModal } from '@/components/ui/bug-report-modal';
 import { Colors } from '@/constants/theme';
 
 const SHADOW_OFFSET = 3;
@@ -18,6 +19,7 @@ const SHADOW_OFFSET = 3;
 export default function GueScreen() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [bugModalVisible, setBugModalVisible] = useState(false);
   const session = useAuthStore((s) => s.session);
   const user = session?.user;
   const { showToast } = useToast();
@@ -99,6 +101,10 @@ export default function GueScreen() {
     showToast('Cache berhasil dibersihkan', 'success');
   };
 
+  const handleReportBug = () => {
+    setBugModalVisible(true);
+  };
+
   return (
     <PageLayout>
       <View style={styles.inner}>
@@ -144,6 +150,14 @@ export default function GueScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.menuOuter}>
+            <View style={styles.menuShadow} pointerEvents="none" />
+            <Pressable style={styles.menuItem} onPress={() => setBugModalVisible(true)}>
+              <MaterialCommunityIcons name="bug-outline" size={22} color={Colors.black} />
+              <ThemedText style={styles.menuText}>Lapor Bug</ThemedText>
+            </Pressable>
+          </View>
+
           <View style={styles.logoutOuter}>
             <View style={styles.logoutShadow} pointerEvents="none" />
             <Pressable
@@ -161,6 +175,11 @@ export default function GueScreen() {
 
         <View style={styles.spacer} />
       </View>
+
+      <BugReportModal
+        visible={bugModalVisible}
+        onClose={() => setBugModalVisible(false)}
+      />
     </PageLayout>
   );
 }

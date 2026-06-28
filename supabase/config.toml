@@ -1,0 +1,6 @@
+[auth]
+enabled = true
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"

@@ -1,0 +1,5 @@
+[edge_runtime]
+policy = "per_worker"
+
+[functions]
+send-bug-report = {}

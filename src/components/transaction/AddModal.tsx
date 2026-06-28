@@ -7,7 +7,6 @@ import {
   Modal,
   StyleSheet,
   Platform,
-  PanResponder,
   Animated,
   useWindowDimensions,
 } from 'react-native';
@@ -109,7 +108,7 @@ export function AddModalProvider({
   const insets = useSafeAreaInsets();
   const { height: screenHeight } = useWindowDimensions();
 
-  const sheetTranslateY = useRef(new Animated.Value(screenHeight)).current;
+  const [sheetTranslateY] = useState(() => new Animated.Value(screenHeight));
 
   const isCalcMode = pendingAmount !== null && operation !== null;
 
@@ -148,111 +147,55 @@ export function AddModalProvider({
     });
   }, [sheetTranslateY, screenHeight]);
 
-  const handleSwipeMove = useCallback((dy: number) => {
-    if (dy > 0) {
-      sheetTranslateY.setValue(dy);
+  const handleNumpadPress = (value: string) => {
+    if (value === '+' || value === '-') {
+      let newPending: number;
+      if (operation === 'add') newPending = (pendingAmount ?? 0) + amount;
+      else if (operation === 'sub') newPending = (pendingAmount ?? 0) - amount;
+      else newPending = amount;
+
+      setPendingAmount(newPending);
+      setOperation(value === '+' ? 'add' : 'sub');
+      setAmount(0);
+      return;
     }
-  }, [sheetTranslateY]);
 
-  const handleSwipeRelease = useCallback((dy: number, vy: number) => {
-    const threshold = 100;
-    if (dy > threshold || vy > 0.5) {
-      close();
-    } else {
-      Animated.spring(sheetTranslateY, {
-        toValue: 0,
-        useNativeDriver: true,
-        damping: 20,
-        stiffness: 200,
-      }).start();
+    if (value === '=') {
+      let result: number;
+      if (operation === 'add') result = (pendingAmount ?? 0) + amount;
+      else if (operation === 'sub') result = (pendingAmount ?? 0) - amount;
+      else result = amount;
+
+      setPendingAmount(null);
+      setOperation(null);
+      setAmount(result < 0 ? 0 : result > 999999999 ? 999999999 : result);
+      return;
     }
-  }, [close, sheetTranslateY]);
 
-  const sheetPanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 15 && Math.abs(gs.dx) < 10,
-      onPanResponderMove: (_, gs) => handleSwipeMove(gs.dy),
-      onPanResponderRelease: (_, gs) => handleSwipeRelease(gs.dy, gs.vy),
-    }),
-  ).current;
+    setAmount((prev) => {
+      if (prev > 999999999) return prev;
 
-  const handlePanResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponderCapture: () => false,
-      onMoveShouldSetPanResponderCapture: (_, gs) => Math.abs(gs.dy) > 5,
-      onPanResponderMove: (_, gs) => handleSwipeMove(gs.dy),
-      onPanResponderRelease: (_, gs) => handleSwipeRelease(gs.dy, gs.vy),
-    }),
-  ).current;
+      if (value === 'backspace') return Math.floor(prev / 10);
+      if (value === 'ac') return 0;
 
-  const amountRef = useRef(amount);
-  amountRef.current = amount;
-  const pendingRef = useRef(pendingAmount);
-  pendingRef.current = pendingAmount;
-  const operationRef = useRef(operation);
-  operationRef.current = operation;
-
-  const handleNumpadPress = useCallback(
-    (value: string) => {
-      if (value === '+' || value === '-') {
-        const curAmount = amountRef.current;
-        const curPending = pendingRef.current;
-        const curOp = operationRef.current;
-
-        let newPending: number;
-        if (curOp === 'add') newPending = (curPending ?? 0) + curAmount;
-        else if (curOp === 'sub') newPending = (curPending ?? 0) - curAmount;
-        else newPending = curAmount;
-
-        setPendingAmount(newPending);
-        setOperation(value === '+' ? 'add' : 'sub');
-        setAmount(0);
-        return;
-      }
-
-      if (value === '=') {
-        const curAmount = amountRef.current;
-        const curPending = pendingRef.current;
-        const curOp = operationRef.current;
-
-        let result: number;
-        if (curOp === 'add') result = (curPending ?? 0) + curAmount;
-        else if (curOp === 'sub') result = (curPending ?? 0) - curAmount;
-        else result = curAmount;
-
-        setPendingAmount(null);
-        setOperation(null);
-        setAmount(result < 0 ? 0 : result > 999999999 ? 999999999 : result);
-        return;
-      }
-
-      setAmount((prev) => {
-        if (prev > 999999999) return prev;
-
-        if (value === 'backspace') return Math.floor(prev / 10);
-        if (value === 'ac') return 0;
-
-        if (value === '00') {
-          if (prev === 0) return 0;
-          const next = prev * 100;
-          return next > 999999999 ? prev : next;
-        }
-
-        if (value === '000') {
-          if (prev === 0) return 0;
-          const next = prev * 1000;
-          return next > 999999999 ? prev : next;
-        }
-
-        const digit = parseInt(value, 10);
-        if (prev === 0) return digit;
-        const next = prev * 10 + digit;
+      if (value === '00') {
+        if (prev === 0) return 0;
+        const next = prev * 100;
         return next > 999999999 ? prev : next;
-      });
-    },
-    [],
-  );
+      }
+
+      if (value === '000') {
+        if (prev === 0) return 0;
+        const next = prev * 1000;
+        return next > 999999999 ? prev : next;
+      }
+
+      const digit = parseInt(value, 10);
+      if (prev === 0) return digit;
+      const next = prev * 10 + digit;
+      return next > 999999999 ? prev : next;
+    });
+  };
 
   const handleSubmit = useCallback(() => {
     if (!category || amount <= 0) return;
@@ -298,27 +241,27 @@ export function AddModalProvider({
         { label: '4', value: '4' },
         { label: '5', value: '5' },
         { label: '6', value: '6' },
-        { icon: 'plus', value: '+' },
+        { label: 'AC', value: 'ac', danger: true },
       ],
       [
         { label: '1', value: '1' },
         { label: '2', value: '2' },
         { label: '3', value: '3' },
-        { icon: 'minus', value: '-' },
+        { icon: 'plus', value: '+' },
       ],
       [
         { label: '0', value: '0' },
         { label: '00', value: '00' },
         { label: '000', value: '000' },
-        { icon: 'close-circle-outline', value: 'ac', danger: true },
+        { icon: 'minus', value: '-' },
       ],
     ];
 
   const contextValue = useMemo(() => ({ visible, category, isEdit, open, close }), [visible, category, isEdit, open, close]);
 
   const sheetContent = (
-    <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }], paddingBottom: insets.bottom + Spacing.four }]} {...sheetPanResponder.panHandlers}>
-      <View style={styles.handleArea} {...handlePanResponder.panHandlers}>
+    <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }], paddingBottom: insets.bottom + Spacing.four }]}>
+      <View style={styles.handleArea}>
         <View style={styles.handle} />
       </View>
 

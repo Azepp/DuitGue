@@ -7,6 +7,16 @@ GoogleSignin.configure({
   webClientId,
 });
 
+async function ensureProfile(userId: string, userMetadata: Record<string, any> | undefined) {
+  const { data: existing } = await supabase.from("profiles").select("id").eq("id", userId).maybeSingle();
+  if (existing) return;
+
+  await supabase.from("profiles").upsert({
+    id: userId,
+    display_name: userMetadata?.full_name || userMetadata?.name || null,
+  });
+}
+
 export async function signInWithGoogle() {
   try {
     await GoogleSignin.hasPlayServices();
@@ -21,6 +31,11 @@ export async function signInWithGoogle() {
     });
 
     if (error) throw error;
+
+    if (data?.user) {
+      await ensureProfile(data.user.id, data.user.user_metadata);
+    }
+
     return { data, error: null };
   } catch (error: any) {
     if (error?.code === "SIGN_IN_CANCELLED") {

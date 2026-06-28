@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
@@ -84,6 +84,28 @@ export default function HomeScreen() {
   });
 
   const displayName = profile?.display_name || session?.user?.user_metadata?.display_name || "UserDuit";
+
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput] = useState("");
+
+  useEffect(() => {
+    if (profile && !profile.display_name) {
+      setNameInput(session?.user?.user_metadata?.full_name || session?.user?.user_metadata?.name || "");
+      setShowNameModal(true);
+    }
+  }, [profile]);
+
+  const nameMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const { error } = await supabase.from("profiles").upsert({ id: userId, display_name: name });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["profile", userId] });
+      setShowNameModal(false);
+      showToast("Nama berhasil disimpan!");
+    },
+  });
 
   const { data: allTransactions } = useQuery({
     queryKey: ["transactions", "all", userId],
@@ -303,6 +325,29 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               );
             })}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showNameModal} transparent animationType="fade" onRequestClose={() => {}}>
+        <Pressable style={styles.modalOverlay}>
+          <Pressable style={styles.nameModal} onPress={() => {}}>
+            <Text style={styles.nameModalTitle}>Kasih nama panggilan lu</Text>
+            <TextInput
+              style={styles.nameInput}
+              placeholder="nama panggilan..."
+              placeholderTextColor={Colors.gray}
+              value={nameInput}
+              onChangeText={setNameInput}
+              autoFocus
+            />
+            <TouchableOpacity
+              style={[styles.nameSubmitBtn, !nameInput.trim() && { opacity: 0.5 }]}
+              disabled={!nameInput.trim() || nameMutation.isPending}
+              onPress={() => nameMutation.mutate(nameInput.trim())}
+            >
+              <Text style={styles.nameSubmitText}>{nameMutation.isPending ? "Menyimpan..." : "Gaskeun"}</Text>
+            </TouchableOpacity>
           </Pressable>
         </Pressable>
       </Modal>
@@ -593,5 +638,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: Colors.white,
+  },
+  nameModal: {
+    backgroundColor: Colors.white,
+    borderRadius: 16,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    padding: Spacing.five,
+    width: "85%",
+    maxWidth: 360,
+    alignItems: "center",
+  },
+  nameModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.black,
+    marginBottom: Spacing.three,
+    textAlign: "center",
+  },
+  nameInput: {
+    width: "100%",
+    borderWidth: 3,
+    borderColor: Colors.black,
+    borderRadius: 12,
+    padding: Spacing.three,
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.black,
+    marginBottom: Spacing.four,
+  },
+  nameSubmitBtn: {
+    backgroundColor: Colors.primary,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    borderRadius: 12,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    width: "100%",
+    alignItems: "center",
+  },
+  nameSubmitText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.black,
   },
 });

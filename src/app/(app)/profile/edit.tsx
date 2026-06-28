@@ -6,7 +6,8 @@ import * as ImagePicker from "expo-image-picker";
 import { Stack, router } from "expo-router";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { ActivityIndicator, Alert, Image, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { z } from "zod";
 
@@ -188,7 +189,7 @@ export default function EditProfileScreen() {
   }
 
   const avatarUrl = profile?.avatar_url;
-  const canDelete = deleteConfirmText.toLowerCase() === "hapus akun saya" && deletePassword.length > 0;
+  const canDelete = deletePassword.length > 0;
 
   return (
     <PageLayout>
@@ -295,20 +296,22 @@ export default function EditProfileScreen() {
             <ThemedText type="small" style={{ marginBottom: 8, marginTop: 4 }}>
               Masukin password lu buat konfirmasi hapus akun
             </ThemedText>
-            <View style={styles.inputOuter}>
-              <View style={styles.inputShadow} pointerEvents="none" />
-              <TextInput
-                style={styles.deleteInput}
-                value={deletePassword}
-                onChangeText={(v) => {
-                  setDeletePassword(v);
-                  setDeletePasswordError("");
-                }}
-                placeholder="masukin password lu"
-                placeholderTextColor={Colors.gray}
-                secureTextEntry
-                autoCapitalize="none"
-              />
+            <View style={{ marginBottom: 16 }}>
+              <View style={styles.inputOuter}>
+                <View style={styles.inputShadow} pointerEvents="none" />
+                <TextInput
+                  style={styles.deleteInput}
+                  value={deletePassword}
+                  onChangeText={(v) => {
+                    setDeletePassword(v);
+                    setDeletePasswordError("");
+                  }}
+                  placeholder="masukin password lu"
+                  placeholderTextColor={Colors.gray}
+                  secureTextEntry
+                  autoCapitalize="none"
+                />
+              </View>
             </View>
             {deletePasswordError ? (
               <ThemedText type="small" style={{ color: Colors.danger, marginTop: 4 }}>

@@ -59,7 +59,8 @@
         {
           "android": {
             "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "abiFilters": ["arm64-v8a"]
           }
         }
       ]

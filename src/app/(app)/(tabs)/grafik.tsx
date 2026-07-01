@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, Animated, PanResponder, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ActivityIndicator, Animated, PanResponder, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { useTransactionSummary, usePeriodOptions } from "@/hooks/useTransactionSummary";
 import { TabSwitcher, PeriodFilter, PeriodValueSelector, CustomDonutChart, CategoryProgressBar, CategoryTooltip } from "@/components/charts";
 import type { TransactionType, PeriodType, CategorySummary } from "@/types/grafik";
@@ -142,7 +143,7 @@ export default function GrafikScreen() {
           ) : categories.length === 0 ? (
             <View style={styles.emptyState}>
               <MaterialCommunityIcons name="chart-donut-variant" size={48} color={Colors.gray} />
-              <Text style={styles.emptyText}>Belum ada transaksi di periode ini</Text>
+              <ThemedText style={styles.emptyText}>Belum ada transaksi di periode ini</ThemedText>
             </View>
           ) : (
             <CustomDonutChart
@@ -219,7 +220,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
   },
   listSection: {

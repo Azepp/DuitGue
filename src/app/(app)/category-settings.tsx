@@ -2,7 +2,8 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Animated, PanResponder, Pressable, ScrollView, StyleSheet, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AddNewCategory } from "@/components/category/AddNewCategory";
@@ -10,7 +11,7 @@ import { CategorySettingsItem, type CategoryItem } from "@/components/category/C
 
 import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { useToast } from "@/components/ui/toast";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -193,7 +194,7 @@ function CategorySettingsContent() {
         {items.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="shape-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>Belum ada kategori {type}</Text>
+            <ThemedText style={styles.emptyText}>Belum ada kategori {type}</ThemedText>
           </View>
         ) : (
           items.map((item, index) => {
@@ -342,9 +343,9 @@ function CategorySettingsContent() {
           header: () => (
             <View style={[styles.headerBar, { paddingTop: 12 + insets.top }]}>
               <TouchableOpacity onPress={() => router.back()}>
-                <Text style={styles.gajadiText}>Gajadi</Text>
+                <ThemedText style={styles.gajadiText}>Gajadi</ThemedText>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>Atur Kategori</Text>
+              <ThemedText style={styles.headerTitle}>Atur Kategori</ThemedText>
             </View>
           ),
         }}
@@ -355,11 +356,11 @@ function CategorySettingsContent() {
           <View style={styles.toggleShadow} pointerEvents="none" />
           <View style={styles.toggleContainer}>
             <TouchableOpacity style={[styles.toggleChip, styles.toggleChipLeft, selectedType === "pengeluaran" && { backgroundColor: Colors.danger }]} onPress={() => setSelectedType("pengeluaran")} activeOpacity={0.8}>
-              <Text style={[styles.toggleText, selectedType === "pengeluaran" && styles.toggleTextActive]}>Pengeluaran</Text>
+              <ThemedText style={[styles.toggleText, selectedType === "pengeluaran" && styles.toggleTextActive]}>Pengeluaran</ThemedText>
             </TouchableOpacity>
             <View style={styles.toggleDivider} />
             <TouchableOpacity style={[styles.toggleChip, styles.toggleChipRight, selectedType === "pemasukan" && { backgroundColor: Colors.success }]} onPress={() => setSelectedType("pemasukan")} activeOpacity={0.8}>
-              <Text style={[styles.toggleText, selectedType === "pemasukan" && styles.toggleTextActive]}>Pemasukan</Text>
+              <ThemedText style={[styles.toggleText, selectedType === "pemasukan" && styles.toggleTextActive]}>Pemasukan</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -380,7 +381,7 @@ function CategorySettingsContent() {
           <View style={styles.addBtnShadow} pointerEvents="none" />
           <Pressable style={({ pressed }) => [styles.addBtn, pressed && styles.addBtnPressed]} onPress={handleAdd}>
             <MaterialCommunityIcons name="plus" size={22} color={Colors.black} />
-            <Text style={styles.addBtnText}>Tambah Kategori</Text>
+            <ThemedText style={styles.addBtnText}>Tambah Kategori</ThemedText>
           </Pressable>
         </View>
       </View>
@@ -429,12 +430,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
   },
   gajadiText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     textDecorationLine: "underline",
   },
@@ -478,7 +479,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   toggleTextActive: {
@@ -499,7 +500,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
     marginTop: Spacing.two,
   },
@@ -535,7 +536,7 @@ const styles = StyleSheet.create({
   },
   addBtnText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

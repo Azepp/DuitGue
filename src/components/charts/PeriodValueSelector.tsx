@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import type { PeriodType } from "@/types/grafik";
 
 type Props = {
@@ -52,9 +53,9 @@ export function PeriodValueSelector({ options, periodType, value, onChange }: Pr
               style={[styles.item, active && styles.itemActive]}
               onPress={() => onChange(item)}
             >
-              <Text style={[styles.label, active && styles.labelActive]}>
+              <ThemedText style={[styles.label, active && styles.labelActive]}>
                 {renderLabel(item)}
-              </Text>
+              </ThemedText>
             </Pressable>
           );
         }}
@@ -88,11 +89,11 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.textSecondary,
   },
   labelActive: {
     color: Colors.black,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
 });

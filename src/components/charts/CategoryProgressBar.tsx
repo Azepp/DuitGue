@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, Text, View } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { StyleSheet, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { formatRupiah } from "@/lib/utils";
 import type { CategorySummary } from "@/types/grafik";
 
@@ -18,15 +19,15 @@ export function CategoryProgressBar({ category }: Props) {
             <View style={[styles.iconBox, { backgroundColor: category.color }]}>
               <MaterialCommunityIcons name={category.icon as any} size={16} color={Colors.white} />
             </View>
-            <Text style={styles.name}>{category.name}</Text>
+            <ThemedText style={styles.name}>{category.name}</ThemedText>
           </View>
-          <Text style={styles.amount}>{formatRupiah(category.amount)}</Text>
+          <ThemedText style={styles.amount}>{formatRupiah(category.amount)}</ThemedText>
         </View>
         <View style={styles.barRow}>
           <View style={styles.barOuter}>
             <View style={[styles.barFill, { width: `${category.percentage}%` as any, backgroundColor: category.color }]} />
           </View>
-          <Text style={styles.percentLabel}>{category.percentage}%</Text>
+          <ThemedText style={styles.percentLabel}>{category.percentage}%</ThemedText>
         </View>
       </View>
     </View>
@@ -77,12 +78,12 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   amount: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   barRow: {
@@ -106,7 +107,7 @@ const styles = StyleSheet.create({
   },
   percentLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     width: 40,
     textAlign: "right",

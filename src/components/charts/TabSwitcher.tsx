@@ -1,6 +1,7 @@
 import { useRef } from "react";
-import { PanResponder, TouchableOpacity, View, StyleSheet, Text } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { PanResponder, TouchableOpacity, View, StyleSheet } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import type { TransactionType } from "@/types/grafik";
 
 type Props = {
@@ -37,7 +38,7 @@ export function TabSwitcher({ value, onChange }: Props) {
             onPress={() => onChange("expense")}
             activeOpacity={0.8}
           >
-            <Text style={[styles.text, value === "expense" && styles.textActive]}>Pengeluaran</Text>
+            <ThemedText style={[styles.text, value === "expense" && styles.textActive]}>Pengeluaran</ThemedText>
           </TouchableOpacity>
           <View style={styles.divider} />
           <TouchableOpacity
@@ -45,7 +46,7 @@ export function TabSwitcher({ value, onChange }: Props) {
             onPress={() => onChange("income")}
             activeOpacity={0.8}
           >
-            <Text style={[styles.text, value === "income" && styles.textActive]}>Pemasukan</Text>
+            <ThemedText style={[styles.text, value === "income" && styles.textActive]}>Pemasukan</ThemedText>
           </TouchableOpacity>
         </View>
       </View>
@@ -90,7 +91,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   textActive: {

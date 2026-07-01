@@ -1,6 +1,7 @@
-import { Platform, Linking, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Platform, Linking, Modal, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 
 type UpdateModalProps = {
   visible: boolean;
@@ -33,32 +34,32 @@ export function UpdateModal({
             <MaterialCommunityIcons name="cellphone-arrow-down" size={36} color={Colors.black} />
           </View>
 
-          <Text style={styles.title}>Update Tersedia!</Text>
-          <Text style={styles.subtitle}>
-            Versi terbaru: <Text style={{ fontWeight: "700" }}>v{latestVersion}</Text>
-          </Text>
+          <ThemedText style={styles.title}>Update Tersedia!</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Versi terbaru: <ThemedText>v{latestVersion}</ThemedText>
+          </ThemedText>
 
           {notes.length > 0 && (
             <View style={styles.notesWrap}>
-              <Text style={styles.notesLabel}>Apa yang baru:</Text>
+              <ThemedText style={styles.notesLabel}>Apa yang baru:</ThemedText>
               {notes.map((line, i) => (
-                <Text key={i} style={styles.noteLine}>
+                <ThemedText key={i} style={styles.noteLine}>
                   • {line.replace(/^[-*]\s*/, "")}
-                </Text>
+                </ThemedText>
               ))}
             </View>
           )}
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.laterBtn} onPress={onClose} activeOpacity={0.8}>
-              <Text style={styles.laterBtnText}>Nanti aja</Text>
+              <ThemedText style={styles.laterBtnText}>Nanti aja</ThemedText>
             </TouchableOpacity>
 
             <View style={styles.downloadShadowWrap}>
               <View style={styles.downloadShadowFill} pointerEvents="none" />
               <TouchableOpacity style={styles.downloadBtn} onPress={handleDownload} activeOpacity={0.8}>
                 <MaterialCommunityIcons name="download" size={20} color={Colors.black} />
-                <Text style={styles.downloadBtnText}>Download</Text>
+                <ThemedText style={styles.downloadBtnText}>Download</ThemedText>
               </TouchableOpacity>
             </View>
           </View>
@@ -102,13 +103,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
   },
   subtitle: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Fonts.medium,
     color: Colors.black,
     marginBottom: Spacing.three,
   },
@@ -123,13 +124,13 @@ const styles = StyleSheet.create({
   },
   notesLabel: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
   },
   noteLine: {
     fontSize: 12,
-    fontWeight: "500",
+    fontFamily: Fonts.medium,
     color: Colors.black,
     lineHeight: 18,
     marginBottom: 2,
@@ -150,7 +151,7 @@ const styles = StyleSheet.create({
   },
   laterBtnText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   downloadShadowWrap: {
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
   },
   downloadBtnText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

@@ -28,7 +28,7 @@ export const Colors = {
 
 export type ThemeColor = keyof typeof Colors;
 
-const fontFamily = 'SpaceGrotesk';
+const fontFamily = 'SpaceGrotesk_400Regular';
 
 export const Fonts = Platform.select({
   ios: {
@@ -36,18 +36,33 @@ export const Fonts = Platform.select({
     serif: fontFamily,
     rounded: fontFamily,
     mono: fontFamily,
+    light: 'SpaceGrotesk_300Light',
+    regular: 'SpaceGrotesk_400Regular',
+    medium: 'SpaceGrotesk_500Medium',
+    semiBold: 'SpaceGrotesk_600SemiBold',
+    bold: 'SpaceGrotesk_700Bold',
   },
   default: {
     sans: fontFamily,
     serif: fontFamily,
     rounded: fontFamily,
     mono: fontFamily,
+    light: 'SpaceGrotesk_300Light',
+    regular: 'SpaceGrotesk_400Regular',
+    medium: 'SpaceGrotesk_500Medium',
+    semiBold: 'SpaceGrotesk_600SemiBold',
+    bold: 'SpaceGrotesk_700Bold',
   },
   web: {
-    sans: `'${fontFamily}', var(--font-display)`,
-    serif: `'${fontFamily}', var(--font-serif)`,
-    rounded: `'${fontFamily}', var(--font-rounded)`,
-    mono: `'${fontFamily}', var(--font-mono)`,
+    sans: `'Space Grotesk', var(--font-display)`,
+    serif: `'Space Grotesk', var(--font-serif)`,
+    rounded: `'Space Grotesk', var(--font-rounded)`,
+    mono: `'Space Grotesk', var(--font-mono)`,
+    light: `'Space Grotesk', var(--font-display)`,
+    regular: `'Space Grotesk', var(--font-display)`,
+    medium: `'Space Grotesk', var(--font-display)`,
+    semiBold: `'Space Grotesk', var(--font-display)`,
+    bold: `'Space Grotesk', var(--font-display)`,
   },
 });
 

@@ -4,7 +4,7 @@ import { Tabs, router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 const FAB_SIZE = 68;
 
@@ -28,7 +28,7 @@ export default function TabsLayout() {
           },
           tabBarLabelStyle: {
             fontSize: 12,
-            fontWeight: 300,
+            fontFamily: Fonts.bold,
           },
         }}
       >

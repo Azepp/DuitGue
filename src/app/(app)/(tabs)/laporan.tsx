@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
@@ -144,7 +145,7 @@ export default function LaporanScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Laporan</Text>
+        <ThemedText style={styles.greeting}>Laporan</ThemedText>
         <YearFilterDropdown
           years={years}
           selectedYear={selectedYear}
@@ -164,15 +165,15 @@ export default function LaporanScreen() {
         ) : isEmpty ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="file-document-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>Belum ada transaksi</Text>
+            <ThemedText style={styles.emptyText}>Belum ada transaksi</ThemedText>
           </View>
         ) : (
           <>
             <View style={styles.cardShadow}>
               <View style={styles.cardShadowFill} pointerEvents="none" />
               <View style={styles.dashboardCard}>
-                <Text style={styles.dashboardLabel}>Saldo Total</Text>
-                <Text style={styles.balanceAmount}>{formatRupiah(safeSummary.grandTotal.saldo)}</Text>
+                <ThemedText style={styles.dashboardLabel}>Saldo Total</ThemedText>
+                <ThemedText style={styles.balanceAmount}>{formatRupiah(safeSummary.grandTotal.saldo)}</ThemedText>
               </View>
             </View>
 
@@ -180,36 +181,36 @@ export default function LaporanScreen() {
               <View style={styles.summaryShadow}>
                 <View style={styles.summaryShadowFill} pointerEvents="none" />
                 <View style={[styles.summaryCard, { backgroundColor: Colors.danger }]}>
-                  <Text style={styles.summaryLabel}>Pengeluaran</Text>
-                  <Text style={styles.summaryAmount}>{formatRupiah(safeSummary.grandTotal.pengeluaran)}</Text>
+                  <ThemedText style={styles.summaryLabel}>Pengeluaran</ThemedText>
+                  <ThemedText style={styles.summaryAmount}>{formatRupiah(safeSummary.grandTotal.pengeluaran)}</ThemedText>
                 </View>
               </View>
               <View style={styles.summaryShadow}>
                 <View style={styles.summaryShadowFill} pointerEvents="none" />
                 <View style={[styles.summaryCard, { backgroundColor: Colors.success }]}>
-                  <Text style={styles.summaryLabel}>Pemasukan</Text>
-                  <Text style={styles.summaryAmount}>{formatRupiah(safeSummary.grandTotal.pemasukan)}</Text>
+                  <ThemedText style={styles.summaryLabel}>Pemasukan</ThemedText>
+                  <ThemedText style={styles.summaryAmount}>{formatRupiah(safeSummary.grandTotal.pemasukan)}</ThemedText>
                 </View>
               </View>
             </View>
 
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, styles.headerMonth]}>Bulan</Text>
-              <Text style={[styles.tableHeaderCell, styles.headerAmount]}>Pengeluaran</Text>
-              <Text style={[styles.tableHeaderCell, styles.headerAmount]}>Pemasukan</Text>
-              <Text style={[styles.tableHeaderCell, styles.headerAmount]}>Saldo</Text>
+              <ThemedText style={[styles.tableHeaderCell, styles.headerMonth]}>Bulan</ThemedText>
+              <ThemedText style={[styles.tableHeaderCell, styles.headerAmount]}>Pengeluaran</ThemedText>
+              <ThemedText style={[styles.tableHeaderCell, styles.headerAmount]}>Pemasukan</ThemedText>
+              <ThemedText style={[styles.tableHeaderCell, styles.headerAmount]}>Saldo</ThemedText>
             </View>
 
             {safeSummary.yearlySummaries.map((yearSummary) => (
               <View key={yearSummary.year} style={styles.tableSection}>
-                <Text style={styles.yearLabel}>{yearSummary.year}</Text>
+                <ThemedText style={styles.yearLabel}>{yearSummary.year}</ThemedText>
 
                 {yearSummary.months.map((month) => (
                   <View key={`${yearSummary.year}-${month.month}`} style={styles.tableRow}>
-                    <Text style={styles.monthName}>{month.monthLabel}</Text>
-                    <Text style={styles.amount}>{formatNumber(month.pengeluaran)}</Text>
-                    <Text style={styles.amount}>{formatNumber(month.pemasukan)}</Text>
-                    <Text style={styles.amount}>{formatNumber(month.saldo)}</Text>
+                    <ThemedText style={styles.monthName}>{month.monthLabel}</ThemedText>
+                    <ThemedText style={styles.amount}>{formatNumber(month.pengeluaran)}</ThemedText>
+                    <ThemedText style={styles.amount}>{formatNumber(month.pemasukan)}</ThemedText>
+                    <ThemedText style={styles.amount}>{formatNumber(month.saldo)}</ThemedText>
                   </View>
                 ))}
               </View>
@@ -236,7 +237,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   scroll: {
@@ -256,7 +257,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
     marginTop: Spacing.two,
   },
@@ -286,12 +287,13 @@ const styles = StyleSheet.create({
   },
   dashboardLabel: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
+    marginBottom: Spacing.one,
   },
   balanceAmount: {
     fontSize: 32,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 
@@ -323,13 +325,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.white,
     marginBottom: 2,
   },
   summaryAmount: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
 
@@ -345,7 +347,7 @@ const styles = StyleSheet.create({
   },
   tableHeaderCell: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   headerMonth: {
@@ -362,7 +364,7 @@ const styles = StyleSheet.create({
   },
   yearLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.danger,
     marginBottom: 2,
   },
@@ -373,13 +375,13 @@ const styles = StyleSheet.create({
   },
   monthName: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     flex: 0.6,
   },
   amount: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     flex: 1,
     textAlign: "left",

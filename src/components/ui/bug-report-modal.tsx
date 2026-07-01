@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/toast';
 
@@ -169,13 +169,13 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     flex: 1,
   },
   label: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.two,
     marginTop: Spacing.one,
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.twoHalf,
     paddingHorizontal: Spacing.three,
     fontSize: 15,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
     color: Colors.black,
     backgroundColor: Colors.white,
   },
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   sendOuter: {
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   },
   sendText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

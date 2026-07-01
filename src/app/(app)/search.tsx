@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
@@ -12,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
 
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
 import { formatRupiah } from '@/lib/utils';
@@ -180,7 +179,7 @@ export default function SearchScreen() {
               onPress={() => setTypeFilter('semua')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, typeFilter === 'semua' && { color: Colors.black }]}>Semua</Text>
+              <ThemedText style={[styles.toggleText, typeFilter === 'semua' && { color: Colors.black }]}>Semua</ThemedText>
             </TouchableOpacity>
             <View style={styles.toggleDivider} />
             <TouchableOpacity
@@ -188,7 +187,7 @@ export default function SearchScreen() {
               onPress={() => setTypeFilter('pengeluaran')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, typeFilter === 'pengeluaran' && styles.toggleTextActive]}>Pengeluaran</Text>
+              <ThemedText style={[styles.toggleText, typeFilter === 'pengeluaran' && styles.toggleTextActive]}>Pengeluaran</ThemedText>
             </TouchableOpacity>
             <View style={styles.toggleDivider} />
             <TouchableOpacity
@@ -196,7 +195,7 @@ export default function SearchScreen() {
               onPress={() => setTypeFilter('pemasukan')}
               activeOpacity={0.8}
             >
-              <Text style={[styles.toggleText, typeFilter === 'pemasukan' && styles.toggleTextActive]}>Pemasukan</Text>
+              <ThemedText style={[styles.toggleText, typeFilter === 'pemasukan' && styles.toggleTextActive]}>Pemasukan</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -214,9 +213,9 @@ export default function SearchScreen() {
                 activeOpacity={0.8}
               >
                 <MaterialCommunityIcons name={cat.icon as any} size={16} color={isSelected ? Colors.white : Colors.black} />
-                <Text style={[styles.categoryChipText, isSelected && { color: Colors.white }]}>
+                <ThemedText style={[styles.categoryChipText, isSelected && { color: Colors.white }]}>
                   {cat.name}
-                </Text>
+                </ThemedText>
               </TouchableOpacity>
             );
           })}
@@ -227,16 +226,16 @@ export default function SearchScreen() {
         {dailyGroups.length === 0 ? (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="receipt-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>Gak ada transaksi yang cocok</Text>
+            <ThemedText style={styles.emptyText}>Gak ada transaksi yang cocok</ThemedText>
           </View>
         ) : (
           dailyGroups.map((group) => (
             <View key={group.date}>
               <View style={styles.dateHeader}>
-                <Text style={styles.dateLabel}>{group.dayName}</Text>
+                <ThemedText style={styles.dateLabel}>{group.dayName}</ThemedText>
                 <View style={styles.dateTotals}>
-                  <Text style={styles.datePengeluaran}>Pengeluaran {formatRupiah(group.totalPengeluaran)}</Text>
-                  <Text style={styles.datePemasukan}>Pemasukan {formatRupiah(group.totalPemasukan)}</Text>
+                  <ThemedText style={styles.datePengeluaran}>Pengeluaran {formatRupiah(group.totalPengeluaran)}</ThemedText>
+                  <ThemedText style={styles.datePemasukan}>Pemasukan {formatRupiah(group.totalPemasukan)}</ThemedText>
                 </View>
               </View>
               {group.transactions.map((tx) => {
@@ -252,13 +251,13 @@ export default function SearchScreen() {
                           <MaterialCommunityIcons name={(cat?.icon || 'help-circle-outline') as any} size={20} color={Colors.white} />
                         </View>
                         <View style={styles.txInfo}>
-                          <Text style={styles.txName}>{cat?.name || 'Kategori'}</Text>
-                          {tx.note ? <Text style={styles.txNote}>{tx.note}</Text> : null}
+                          <ThemedText style={styles.txName}>{cat?.name || 'Kategori'}</ThemedText>
+                          {tx.note ? <ThemedText style={styles.txNote}>{tx.note}</ThemedText> : null}
                         </View>
-                        <Text style={[styles.txAmount, { color: isPengeluaran ? Colors.danger : Colors.success }]}>
+                        <ThemedText style={[styles.txAmount, { color: isPengeluaran ? Colors.danger : Colors.success }]}>
                           {isPengeluaran ? '-' : '+'}
                           {formatRupiah(tx.amount)}
-                        </Text>
+                        </ThemedText>
                       </View>
                     </View>
                   </View>
@@ -287,12 +286,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   gajadiText: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     textDecorationLine: 'underline',
   },
@@ -372,7 +371,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   toggleTextActive: {
@@ -402,7 +401,7 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   scroll: {
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
   },
@@ -430,12 +429,12 @@ const styles = StyleSheet.create({
   },
   datePengeluaran: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   datePemasukan: {
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   txShadow: {
@@ -478,18 +477,18 @@ const styles = StyleSheet.create({
   },
   txName: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   txNote: {
     fontSize: 12,
-    fontWeight: '500',
+    fontFamily: Fonts.medium,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   txAmount: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
   },
   emptyState: {
     alignItems: 'center',
@@ -497,7 +496,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
     marginTop: Spacing.two,
   },

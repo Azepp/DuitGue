@@ -1,5 +1,6 @@
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { Modal, StyleSheet, TouchableOpacity, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 
 type ConfirmModalProps = {
   visible: boolean;
@@ -32,12 +33,12 @@ export function ConfirmModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.message}>{message}</Text>
+          <ThemedText style={styles.title}>{title}</ThemedText>
+          <ThemedText style={styles.message}>{message}</ThemedText>
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onCancel} activeOpacity={0.8}>
-              <Text style={styles.cancelText}>{cancelText}</Text>
+              <ThemedText style={styles.cancelText}>{cancelText}</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -45,7 +46,7 @@ export function ConfirmModal({
               onPress={onConfirm}
               activeOpacity={0.8}
             >
-              <Text style={styles.confirmText}>{confirmText}</Text>
+              <ThemedText style={styles.confirmText}>{confirmText}</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -76,13 +77,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.two,
   },
   message: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Fonts.medium,
     color: Colors.black,
     lineHeight: 20,
     marginBottom: Spacing.four,
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   confirmBtn: {
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   },
   confirmText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
 });

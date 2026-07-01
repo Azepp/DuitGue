@@ -1,7 +1,6 @@
 import { useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   Pressable,
   Modal,
@@ -15,7 +14,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 import { NeoInput } from '@/components/ui/neo-input';
 import { NeoDatePicker } from '@/components/ui/date-picker';
-import { Colors, Spacing } from '@/constants/theme';
+import { ThemedText } from '@/components/themed-text';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 const formatNumber = (n: number) => {
   const s = n.toString();
@@ -81,7 +81,7 @@ function NumpadButton({
         {icon ? (
           <MaterialCommunityIcons name={icon} size={24} color={danger ? Colors.white : Colors.black} />
         ) : (
-          <Text style={[styles.numpadBtnText, danger && { color: Colors.white }]}>{label}</Text>
+          <ThemedText style={[styles.numpadBtnText, danger && { color: Colors.white }]}>{label}</ThemedText>
         )}
       </Pressable>
     </View>
@@ -266,7 +266,7 @@ export function AddModalProvider({
       </View>
 
       <View style={styles.inputWrapper}>
-        <Text style={styles.fieldLabel}>Catatan:</Text>
+        <ThemedText style={styles.fieldLabel}>Catatan:</ThemedText>
         <NeoInput
           placeholder="Cth: Makan siang di warteg"
           value={note}
@@ -276,14 +276,14 @@ export function AddModalProvider({
       </View>
 
       <View style={styles.amountSection}>
-        <Text style={styles.fieldLabel}>Jumlah Duit:</Text>
+        <ThemedText style={styles.fieldLabel}>Jumlah Duit:</ThemedText>
         {isCalcMode && (
-          <Text style={styles.pendingText}>
+          <ThemedText style={styles.pendingText}>
             {formatNumber(pendingAmount ?? 0)} {operation === 'add' ? '+' : '-'}
-          </Text>
+          </ThemedText>
         )}
         <View style={styles.amountDisplay}>
-          <Text
+          <ThemedText
             style={[
               styles.amountText,
               category?.type === 'pengeluaran' && { color: Colors.danger },
@@ -293,7 +293,7 @@ export function AddModalProvider({
             adjustsFontSizeToFit
           >
             {formatNumber(amount)}
-          </Text>
+          </ThemedText>
         </View>
       </View>
 
@@ -302,7 +302,7 @@ export function AddModalProvider({
           <View style={styles.pillShadowFill} pointerEvents="none" />
           <TouchableOpacity style={styles.confirmPill} onPress={close}>
             <MaterialCommunityIcons name="pencil-outline" size={18} color={Colors.black} />
-            <Text style={styles.pillText}>{category?.name}</Text>
+            <ThemedText style={styles.pillText}>{category?.name}</ThemedText>
           </TouchableOpacity>
         </View>
 
@@ -313,7 +313,7 @@ export function AddModalProvider({
             onPress={() => setShowDatePicker(true)}
           >
             <MaterialCommunityIcons name="calendar-outline" size={18} color={Colors.black} />
-            <Text style={styles.pillText}>{formatDate(date)}</Text>
+            <ThemedText style={styles.pillText}>{formatDate(date)}</ThemedText>
           </TouchableOpacity>
         </View>
       </View>
@@ -347,7 +347,7 @@ export function AddModalProvider({
           disabled
           activeOpacity={0.8}
         >
-          <Text style={styles.submitBtnText}>Gaskeun</Text>
+          <ThemedText style={styles.submitBtnText}>Gaskeun</ThemedText>
         </TouchableOpacity>
       ) : (
         <View style={styles.submitShadow}>
@@ -360,7 +360,7 @@ export function AddModalProvider({
             {isCalcMode ? (
               <MaterialCommunityIcons name="equal" size={24} color={Colors.black} />
             ) : (
-              <Text style={styles.submitBtnText}>Gaskeun</Text>
+              <ThemedText style={styles.submitBtnText}>Gaskeun</ThemedText>
             )}
           </TouchableOpacity>
         </View>
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
   },
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
   },
   pendingText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily: Fonts.semiBold,
     color: Colors.textSecondary,
     marginBottom: Spacing.half,
   },
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   },
   amountText: {
     fontSize: 36,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   confirmBar: {
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   numpadGrid: {
@@ -545,7 +545,7 @@ const styles = StyleSheet.create({
   },
   numpadBtnText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   submitShadow: {
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
   },
   submitBtnText: {
     fontSize: 18,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

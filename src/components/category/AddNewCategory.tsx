@@ -1,9 +1,10 @@
 import { NeoInput } from "@/components/ui/neo-input";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from "react-native";
+import { Animated, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, TouchableOpacity, useWindowDimensions, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ThemedText } from "@/components/themed-text";
 
 const ICON_GROUPS: { label: string; icons: string[] }[] = [
   {
@@ -175,13 +176,13 @@ export function AddNewCategory({ visible, type, editData, onClose, onSave }: Pro
       </View>
 
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{editData ? "Edit Kategori" : "Tambah Kategori"}</Text>
-        <Text style={[styles.typeLabel, { color: type === "pengeluaran" ? Colors.danger : Colors.success }]}>{type === "pengeluaran" ? "Pengeluaran" : "Pemasukan"}</Text>
+        <ThemedText style={styles.title}>{editData ? "Edit Kategori" : "Tambah Kategori"}</ThemedText>
+        <ThemedText style={[styles.typeLabel, { color: type === "pengeluaran" ? Colors.danger : Colors.success }]}>{type === "pengeluaran" ? "Pengeluaran" : "Pemasukan"}</ThemedText>
       </View>
 
       <NeoInput placeholder="nama kategori..." value={name} onChangeText={setName} autoCapitalize="sentences" />
 
-      <Text style={styles.sectionTitle}>Pilih Warna</Text>
+      <ThemedText style={styles.sectionTitle}>Pilih Warna</ThemedText>
       <View style={styles.colorGrid}>
         {COLORS.map((c) => (
           <TouchableOpacity key={c} style={[styles.colorItem, { backgroundColor: c }, color === c && styles.colorItemSelected]} onPress={() => setColor(c)} activeOpacity={0.7}>
@@ -190,11 +191,11 @@ export function AddNewCategory({ visible, type, editData, onClose, onSave }: Pro
         ))}
       </View>
 
-      <Text style={styles.sectionTitle}>Pilih Icon</Text>
+      <ThemedText style={styles.sectionTitle}>Pilih Icon</ThemedText>
       <ScrollView style={styles.iconScrollContainer} showsVerticalScrollIndicator={false} nestedScrollEnabled>
         {ICON_GROUPS.map((group) => (
           <View key={group.label} style={styles.iconGroup}>
-            <Text style={styles.groupLabel}>{group.label}</Text>
+            <ThemedText style={styles.groupLabel}>{group.label}</ThemedText>
             <View style={styles.iconRow}>
               {group.icons.map((iconName) => (
                 <TouchableOpacity
@@ -226,7 +227,7 @@ export function AddNewCategory({ visible, type, editData, onClose, onSave }: Pro
           onPress={handleSave}
           disabled={!name.trim() || saving}
         >
-          <Text style={styles.saveBtnText}>{saving ? "Menyimpan..." : "Gaskeun"}</Text>
+          <ThemedText style={styles.saveBtnText}>{saving ? "Menyimpan..." : "Gaskeun"}</ThemedText>
         </Pressable>
       </View>
     </Animated.View>
@@ -292,16 +293,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   typeLabel: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   sectionTitle: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginTop: 16,
     marginBottom: 10,
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
   },
   groupLabel: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.gray,
     marginBottom: 8,
     textTransform: "uppercase",
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
 });

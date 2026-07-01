@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
 
-import { Colors, Spacing } from "@/constants/theme";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { formatRupiah } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
@@ -200,7 +201,7 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.greeting}>Haihai, {displayName}</Text>
+        <ThemedText style={styles.greeting}>Haihai, {displayName}</ThemedText>
         <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
           <MaterialCommunityIcons name="magnify" size={20} color={Colors.black} />
         </TouchableOpacity>
@@ -212,8 +213,8 @@ export default function HomeScreen() {
           <View style={styles.dashboardCard}>
             <View style={styles.dashboardHeader}>
               <View>
-                <Text style={styles.dashboardLabel}>Duit lu sekarang</Text>
-                <Text style={styles.balanceAmount}>{formatRupiah(balance)}</Text>
+                <ThemedText style={styles.dashboardLabel}>Duit lu sekarang</ThemedText>
+                <ThemedText style={styles.balanceAmount}>{formatRupiah(balance)}</ThemedText>
               </View>
 
               <TouchableOpacity style={styles.plusBtn} onPress={() => router.push({ pathname: "/(app)/add-transaction", params: { type: "pemasukan" } })}>
@@ -224,7 +225,7 @@ export default function HomeScreen() {
         </View>
 
         <TouchableOpacity style={styles.monthFilter} onPress={() => setShowMonthPicker(true)}>
-          <Text style={styles.monthFilterText}>{selectedMonthLabel}</Text>
+          <ThemedText style={styles.monthFilterText}>{selectedMonthLabel}</ThemedText>
           <MaterialCommunityIcons name="chevron-down" size={18} color={Colors.black} />
         </TouchableOpacity>
 
@@ -232,15 +233,15 @@ export default function HomeScreen() {
           <View style={styles.summaryShadow}>
             <View style={styles.summaryShadowFill} pointerEvents="none" />
             <View style={[styles.summaryCard, { backgroundColor: Colors.danger }]}>
-              <Text style={styles.summaryLabel}>Pengeluaran</Text>
-              <Text style={styles.summaryAmount}>{formatRupiah(monthlyTotals.pengeluaran)}</Text>
+              <ThemedText style={styles.summaryLabel}>Pengeluaran</ThemedText>
+              <ThemedText style={styles.summaryAmount}>{formatRupiah(monthlyTotals.pengeluaran)}</ThemedText>
             </View>
           </View>
           <View style={styles.summaryShadow}>
             <View style={styles.summaryShadowFill} pointerEvents="none" />
             <View style={[styles.summaryCard, { backgroundColor: Colors.success }]}>
-              <Text style={styles.summaryLabel}>Pemasukan</Text>
-              <Text style={styles.summaryAmount}>{formatRupiah(monthlyTotals.pemasukan)}</Text>
+              <ThemedText style={styles.summaryLabel}>Pemasukan</ThemedText>
+              <ThemedText style={styles.summaryAmount}>{formatRupiah(monthlyTotals.pemasukan)}</ThemedText>
             </View>
           </View>
         </View>
@@ -248,10 +249,10 @@ export default function HomeScreen() {
         {dailyGroups.map((group) => (
           <View key={group.date}>
             <View style={styles.dateHeader}>
-              <Text style={styles.dateLabel}>{group.dayName}</Text>
+              <ThemedText style={styles.dateLabel}>{group.dayName}</ThemedText>
               <View style={styles.dateTotals}>
-                <Text style={styles.datePengeluaran}>Pengeluaran {formatRupiah(group.totalPengeluaran)}</Text>
-                <Text style={styles.datePemasukan}>Pemasukan {formatRupiah(group.totalPemasukan)}</Text>
+                <ThemedText style={styles.datePengeluaran}>Pengeluaran {formatRupiah(group.totalPengeluaran)}</ThemedText>
+                <ThemedText style={styles.datePemasukan}>Pemasukan {formatRupiah(group.totalPemasukan)}</ThemedText>
               </View>
             </View>
 
@@ -269,23 +270,23 @@ export default function HomeScreen() {
                         <MaterialCommunityIcons name={(cat?.icon || "help-circle-outline") as any} size={20} color={Colors.white} />
                       </View>
                       <View style={styles.txInfo}>
-                        <Text style={styles.txName}>{cat?.name || "Kategori"}</Text>
-                        {tx.note ? <Text style={styles.txNote}>{tx.note}</Text> : null}
+                        <ThemedText style={styles.txName}>{cat?.name || "Kategori"}</ThemedText>
+                        {tx.note ? <ThemedText style={styles.txNote}>{tx.note}</ThemedText> : null}
                       </View>
-                      <Text style={[styles.txAmount, { color: isPengeluaran ? Colors.danger : Colors.success }]}>
+                      <ThemedText style={[styles.txAmount, { color: isPengeluaran ? Colors.danger : Colors.success }]}>
                         {isPengeluaran ? "-" : "+"}
                         {formatRupiah(tx.amount)}
-                      </Text>
+                      </ThemedText>
                     </TouchableOpacity>
                     {isExpanded && (
                       <View style={styles.accordionRow}>
                         <TouchableOpacity style={[styles.accordionBtn, { backgroundColor: Colors.blue }]} onPress={() => handleEditTx(tx)} activeOpacity={0.8}>
                           <MaterialCommunityIcons name="pencil-outline" size={18} color={Colors.white} />
-                          <Text style={styles.accordionBtnText}>Edit</Text>
+                          <ThemedText style={styles.accordionBtnText}>Edit</ThemedText>
                         </TouchableOpacity>
                         <TouchableOpacity style={[styles.accordionBtn, { backgroundColor: Colors.danger }]} onPress={() => handleDeleteTx(tx)} activeOpacity={0.8}>
                           <MaterialCommunityIcons name="delete-outline" size={18} color={Colors.white} />
-                          <Text style={styles.accordionBtnText}>Hapus</Text>
+                          <ThemedText style={styles.accordionBtnText}>Hapus</ThemedText>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -299,7 +300,7 @@ export default function HomeScreen() {
         {monthlyTransactions && monthlyTransactions.length === 0 && (
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="receipt-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>Belum ada transaksi bulan ini</Text>
+            <ThemedText style={styles.emptyText}>Belum ada transaksi bulan ini</ThemedText>
           </View>
         )}
       </ScrollView>
@@ -307,7 +308,8 @@ export default function HomeScreen() {
       <Modal visible={showMonthPicker} transparent animationType="fade" onRequestClose={() => setShowMonthPicker(false)}>
         <Pressable style={styles.modalOverlay} onPress={() => setShowMonthPicker(false)}>
           <Pressable style={styles.monthPicker} onPress={() => {}}>
-            <Text style={styles.monthPickerTitle}>Pilih Bulan</Text>
+            <ThemedText style={styles.monthPickerTitle}>Pilih Bulan</ThemedText>
+            <ScrollView showsVerticalScrollIndicator={false}>
             {monthPickerItems.map((item) => {
               const isSelected = item.month === selectedMonth && item.year === selectedYear;
               return (
@@ -320,11 +322,12 @@ export default function HomeScreen() {
                     setShowMonthPicker(false);
                   }}
                 >
-                  <Text style={[styles.monthItemText, isSelected && styles.monthItemTextSelected]}>{item.label}</Text>
+                  <ThemedText style={[styles.monthItemText, isSelected && styles.monthItemTextSelected]}>{item.label}</ThemedText>
                   {isSelected && <MaterialCommunityIcons name="check" size={18} color={Colors.white} />}
                 </TouchableOpacity>
               );
             })}
+            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -332,7 +335,7 @@ export default function HomeScreen() {
       <Modal visible={showNameModal} transparent animationType="fade" onRequestClose={() => {}}>
         <Pressable style={styles.modalOverlay}>
           <Pressable style={styles.nameModal} onPress={() => {}}>
-            <Text style={styles.nameModalTitle}>Kasih nama panggilan lu</Text>
+            <ThemedText style={styles.nameModalTitle}>Kasih nama panggilan lu</ThemedText>
             <TextInput
               style={styles.nameInput}
               placeholder="nama panggilan..."
@@ -346,7 +349,7 @@ export default function HomeScreen() {
               disabled={!nameInput.trim() || nameMutation.isPending}
               onPress={() => nameMutation.mutate(nameInput.trim())}
             >
-              <Text style={styles.nameSubmitText}>{nameMutation.isPending ? "Menyimpan..." : "Gaskeun"}</Text>
+              <ThemedText style={styles.nameSubmitText}>{nameMutation.isPending ? "Menyimpan..." : "Gaskeun"}</ThemedText>
             </TouchableOpacity>
           </Pressable>
         </Pressable>
@@ -370,7 +373,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 24,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   searchBtn: {
@@ -419,8 +422,9 @@ const styles = StyleSheet.create({
   },
   dashboardLabel: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
+    marginBottom: Spacing.one,
   },
   plusBtn: {
     width: 32,
@@ -434,7 +438,7 @@ const styles = StyleSheet.create({
   },
   balanceAmount: {
     fontSize: 32,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   monthFilter: {
@@ -446,7 +450,7 @@ const styles = StyleSheet.create({
   },
   monthFilterText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   summaryRow: {
@@ -476,13 +480,13 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.white,
     marginBottom: 2,
   },
   summaryAmount: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
   dateHeader: {
@@ -491,9 +495,8 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
-    marginBottom: Spacing.one,
   },
   dateTotals: {
     flexDirection: "row",
@@ -502,12 +505,12 @@ const styles = StyleSheet.create({
   },
   datePengeluaran: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   datePemasukan: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   txShadow: {
@@ -550,18 +553,18 @@ const styles = StyleSheet.create({
   },
   txName: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   txNote: {
     fontSize: 12,
-    fontWeight: "500",
+    fontFamily: Fonts.medium,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   txAmount: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   emptyState: {
     alignItems: "center",
@@ -569,7 +572,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
     marginTop: Spacing.two,
   },
@@ -590,7 +593,7 @@ const styles = StyleSheet.create({
   },
   monthPickerTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.three,
     textAlign: "center",
@@ -611,11 +614,11 @@ const styles = StyleSheet.create({
   },
   monthItemText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
   },
   monthItemTextSelected: {
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   accordionRow: {
     flexDirection: "row",
@@ -636,7 +639,7 @@ const styles = StyleSheet.create({
   },
   accordionBtnText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
   nameModal: {
@@ -651,7 +654,7 @@ const styles = StyleSheet.create({
   },
   nameModalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.three,
     textAlign: "center",
@@ -663,7 +666,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: Spacing.three,
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     marginBottom: Spacing.four,
   },
@@ -679,7 +682,7 @@ const styles = StyleSheet.create({
   },
   nameSubmitText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

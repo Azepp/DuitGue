@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from "react-native";
+import { LayoutChangeEvent, Pressable, StyleSheet, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
 import Svg, { Path, Circle } from "react-native-svg";
-import { Colors } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import type { CategorySummary } from "@/types/grafik";
 
 type Props = {
@@ -96,7 +97,7 @@ export function CustomDonutChart({ data, total, type, onSliceTap }: Props) {
             </Svg>
           </Pressable>
           <View style={[StyleSheet.absoluteFill, { justifyContent: "center", alignItems: "center", pointerEvents: "none" }]}>
-            <Text style={styles.centerTotal}>{prefix}{formatShort(total)}</Text>
+            <ThemedText style={styles.centerTotal}>{prefix}{formatShort(total)}</ThemedText>
           </View>
         </View>
       </View>
@@ -120,7 +121,7 @@ const styles = StyleSheet.create({
   },
   centerTotal: {
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

@@ -14,7 +14,7 @@ import { z } from "zod";
 import { ThemedText } from "@/components/themed-text";
 import { PageLayout } from "@/components/ui/page-layout";
 import { useToast } from "@/components/ui/toast";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { signOutGoogle } from "@/lib/google-signin";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
@@ -364,12 +364,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   gajadiText: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     textDecorationLine: "underline",
   },
@@ -529,7 +529,7 @@ const styles = StyleSheet.create({
   },
   submitText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   divider: {
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   deleteText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
   backdrop: {
@@ -589,13 +589,13 @@ const styles = StyleSheet.create({
   },
   deleteCardTitle: {
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.two,
   },
   deleteCardMessage: {
     fontSize: 14,
-    fontWeight: "500",
+    fontFamily: Fonts.medium,
     color: Colors.black,
     lineHeight: 20,
     marginBottom: Spacing.two,
@@ -641,7 +641,7 @@ const styles = StyleSheet.create({
   },
   cancelBtnText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   confirmDeleteOuter: {
@@ -674,7 +674,7 @@ const styles = StyleSheet.create({
   },
   confirmDeleteText: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.white,
   },
 });

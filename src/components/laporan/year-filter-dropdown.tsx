@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Pressable, StyleSheet, TouchableOpacity, View } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors, Spacing } from "@/constants/theme";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 
 type YearFilterDropdownProps = {
   years: string[];
@@ -27,7 +28,7 @@ export function YearFilterDropdown({ years, selectedYear, onSelect }: YearFilter
           onPressOut={() => setPressed(false)}
           style={[styles.base, pressed && styles.pressed]}
         >
-          <Text style={styles.text}>{label}</Text>
+          <ThemedText style={styles.text}>{label}</ThemedText>
           <MaterialCommunityIcons
             name={open ? "chevron-up" : "chevron-down"}
             size={16}
@@ -45,9 +46,9 @@ export function YearFilterDropdown({ years, selectedYear, onSelect }: YearFilter
               onPress={() => { onSelect("all"); setOpen(false); }}
               activeOpacity={0.7}
             >
-              <Text style={[styles.itemText, selectedYear === "all" && styles.itemTextSelected]}>
+              <ThemedText style={[styles.itemText, selectedYear === "all" && styles.itemTextSelected]}>
                 Semua
-              </Text>
+              </ThemedText>
               {selectedYear === "all" && (
                 <MaterialCommunityIcons name="check" size={16} color={Colors.black} />
               )}
@@ -62,9 +63,9 @@ export function YearFilterDropdown({ years, selectedYear, onSelect }: YearFilter
                 onPress={() => { onSelect(year); setOpen(false); }}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.itemText, selectedYear === year && styles.itemTextSelected]}>
+                <ThemedText style={[styles.itemText, selectedYear === year && styles.itemTextSelected]}>
                   {year}
-                </Text>
+                </ThemedText>
                 {selectedYear === year && (
                   <MaterialCommunityIcons name="check" size={16} color={Colors.black} />
                 )}
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   backdrop: {
@@ -157,10 +158,10 @@ const styles = StyleSheet.create({
   },
   itemText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
   },
   itemTextSelected: {
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
 });

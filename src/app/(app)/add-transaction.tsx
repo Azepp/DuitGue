@@ -2,11 +2,12 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Animated, FlatList, PanResponder, StyleSheet, Text, TouchableOpacity, View, useWindowDimensions } from "react-native";
+import { Animated, FlatList, PanResponder, StyleSheet, TouchableOpacity, View, useWindowDimensions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { ThemedText } from "@/components/themed-text";
 import { AddModalProvider, useAddModal, type TransactionData } from "@/components/transaction/AddModal";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { queryClient } from "@/lib/query-client";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
@@ -152,9 +153,9 @@ function AddTransactionContent() {
             <MaterialCommunityIcons name={item.icon as any} size={22} color={Colors.white} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.categoryLabel} numberOfLines={1}>
+        <ThemedText style={styles.categoryLabel} numberOfLines={1}>
           {item.name}
-        </Text>
+        </ThemedText>
       </View>
     ),
     [handleCategoryPress],
@@ -172,7 +173,7 @@ function AddTransactionContent() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <MaterialCommunityIcons name="shape-outline" size={48} color={Colors.gray} />
-            <Text style={styles.emptyText}>Belum ada kategori {type}</Text>
+            <ThemedText style={styles.emptyText}>Belum ada kategori {type}</ThemedText>
           </View>
         }
       />
@@ -191,9 +192,9 @@ function AddTransactionContent() {
           header: () => (
             <View style={[styles.headerBar, { paddingTop: 12 + insets.top }]}>
               <TouchableOpacity onPress={() => router.back()}>
-                <Text style={styles.gajadiText}>Gajadi</Text>
+                <ThemedText style={styles.gajadiText}>Gajadi</ThemedText>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>{editTxId ? "Edit Catatan" : "Tambahkan Catatan"}</Text>
+              <ThemedText style={styles.headerTitle}>{editTxId ? "Edit Catatan" : "Tambahkan Catatan"}</ThemedText>
             </View>
           ),
         }}
@@ -204,11 +205,11 @@ function AddTransactionContent() {
           <View style={styles.toggleShadow} pointerEvents="none" />
           <View style={styles.toggleContainer}>
             <TouchableOpacity style={[styles.toggleChip, styles.toggleChipLeft, selectedType === "pengeluaran" && { backgroundColor: Colors.danger }]} onPress={handleTogglePengeluaran} activeOpacity={0.8}>
-              <Text style={[styles.toggleText, selectedType === "pengeluaran" && styles.toggleTextActive]}>Pengeluaran</Text>
+              <ThemedText style={[styles.toggleText, selectedType === "pengeluaran" && styles.toggleTextActive]}>Pengeluaran</ThemedText>
             </TouchableOpacity>
             <View style={styles.toggleDivider} />
             <TouchableOpacity style={[styles.toggleChip, styles.toggleChipRight, selectedType === "pemasukan" && { backgroundColor: Colors.success }]} onPress={handleTogglePemasukan} activeOpacity={0.8}>
-              <Text style={[styles.toggleText, selectedType === "pemasukan" && styles.toggleTextActive]}>Pemasukan</Text>
+              <ThemedText style={[styles.toggleText, selectedType === "pemasukan" && styles.toggleTextActive]}>Pemasukan</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -246,7 +247,7 @@ function AddTransactionContent() {
         router.push("/category-settings");
       }}>
         <MaterialCommunityIcons name="cog-outline" size={18} color={Colors.black} />
-        <Text style={styles.aturBtnText}>Atur</Text>
+        <ThemedText style={styles.aturBtnText}>Atur</ThemedText>
       </TouchableOpacity>
     </View>
   );
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   toggleTextActive: {
@@ -399,7 +400,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 10,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     textAlign: "center",
     marginTop: 4,
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.gray,
     marginTop: Spacing.two,
   },
@@ -431,7 +432,7 @@ const styles = StyleSheet.create({
   },
   aturBtnText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   headerBar: {
@@ -444,12 +445,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
   },
   gajadiText: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     textDecorationLine: "underline",
   },

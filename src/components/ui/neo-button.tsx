@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Pressable, View, type ViewStyle, StyleSheet } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 export type NeoButtonProps = {
   title: string;
@@ -97,7 +97,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 16,
-    fontWeight: 600,
-    fontFamily: undefined,
+    fontFamily: Fonts.semiBold,
   },
 });

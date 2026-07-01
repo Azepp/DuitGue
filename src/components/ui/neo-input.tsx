@@ -100,9 +100,8 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.light,
     fontSize: 16,
-    fontWeight: 300,
     color: Colors.black,
     padding: 16,
     paddingVertical: 14,

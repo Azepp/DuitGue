@@ -2,7 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { NeoButton } from "@/components/ui/neo-button";
 import { NeoInput } from "@/components/ui/neo-input";
 import { PageLayout } from "@/components/ui/page-layout";
-import { Colors } from "@/constants/theme";
+import { Colors, Fonts } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { Link } from "expo-router";
 import { useState } from "react";
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.black,
   },
   dividerText: {
-    fontWeight: 500,
+    fontFamily: Fonts.medium,
   },
   registerRow: {
     flexDirection: "row",
@@ -183,11 +183,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   registerText: {
-    fontWeight: 500,
+    fontFamily: Fonts.medium,
   },
   registerLink: {
     color: Colors.black,
     textDecorationLine: "underline",
-    fontWeight: 700,
+    fontFamily: Fonts.bold,
   },
 });

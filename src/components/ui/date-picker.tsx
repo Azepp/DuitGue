@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ThemedText } from "@/components/themed-text";
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 const DAY_NAMES = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
@@ -87,7 +88,7 @@ export function NeoDatePicker({ visible, date, onDateChange, onClose }: NeoDateP
               <TouchableOpacity onPress={handlePrevMonth} activeOpacity={0.8} style={styles.arrowBtn}>
                 <MaterialCommunityIcons name="chevron-left" size={22} color={Colors.black} />
               </TouchableOpacity>
-              <Text style={styles.monthLabel}>{monthLabel}</Text>
+              <ThemedText style={styles.monthLabel}>{monthLabel}</ThemedText>
               <TouchableOpacity onPress={handleNextMonth} activeOpacity={0.8} style={styles.arrowBtn}>
                 <MaterialCommunityIcons name="chevron-right" size={22} color={Colors.black} />
               </TouchableOpacity>
@@ -95,7 +96,7 @@ export function NeoDatePicker({ visible, date, onDateChange, onClose }: NeoDateP
 
             <View style={styles.dayNames}>
               {DAY_NAMES.map((name) => (
-                <Text key={name} style={styles.dayName}>{name}</Text>
+                <ThemedText key={name} style={styles.dayName}>{name}</ThemedText>
               ))}
             </View>
 
@@ -119,9 +120,9 @@ export function NeoDatePicker({ visible, date, onDateChange, onClose }: NeoDateP
                         activeOpacity={0.8}
                       >
                         <View style={[styles.dayCircle, isSelected && styles.dayCircleSelected]}>
-                          <Text style={[styles.dayText, isToday && !isSelected && styles.dayTextToday]}>
+                          <ThemedText style={[styles.dayText, isToday && !isSelected && styles.dayTextToday]}>
                             {day}
-                          </Text>
+                          </ThemedText>
                         </View>
                       </TouchableOpacity>
                     );
@@ -131,7 +132,7 @@ export function NeoDatePicker({ visible, date, onDateChange, onClose }: NeoDateP
             </View>
 
             <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.8}>
-              <Text style={styles.closeBtnText}>Tutup</Text>
+              <ThemedText style={styles.closeBtnText}>Tutup</ThemedText>
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     fontSize: 15,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   dayNames: {
@@ -197,7 +198,7 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
     paddingVertical: 2,
   },
@@ -229,7 +230,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   dayTextToday: {
@@ -246,7 +247,7 @@ const styles = StyleSheet.create({
   },
   closeBtnText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
 });

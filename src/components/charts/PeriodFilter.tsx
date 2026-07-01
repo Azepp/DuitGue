@@ -1,5 +1,6 @@
-import { TouchableOpacity, View, StyleSheet, Text } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { TouchableOpacity, View, StyleSheet } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import type { PeriodType } from "@/types/grafik";
 
 type Props = {
@@ -26,7 +27,7 @@ export function PeriodFilter({ value, onChange }: Props) {
                 onPress={() => onChange(opt.value)}
                 activeOpacity={0.8}
               >
-                <Text style={[styles.text, value === opt.value && styles.textActive]}>{opt.label}</Text>
+                <ThemedText style={[styles.text, value === opt.value && styles.textActive]}>{opt.label}</ThemedText>
               </TouchableOpacity>
               {i < OPTIONS.length - 1 && <View style={styles.divider} />}
             </View>
@@ -74,7 +75,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
     textAlign: "center",
   },

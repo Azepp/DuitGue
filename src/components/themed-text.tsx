@@ -8,8 +8,24 @@ export type ThemedTextProps = TextProps & {
   themeColor?: ThemeColor;
 };
 
+const FONT_BY_WEIGHT: Record<string, string> = {
+  '100': 'SpaceGrotesk_300Light',
+  '200': 'SpaceGrotesk_300Light',
+  '300': 'SpaceGrotesk_300Light',
+  '400': 'SpaceGrotesk_400Regular',
+  '500': 'SpaceGrotesk_500Medium',
+  '600': 'SpaceGrotesk_600SemiBold',
+  '700': 'SpaceGrotesk_700Bold',
+  '800': 'SpaceGrotesk_700Bold',
+  '900': 'SpaceGrotesk_700Bold',
+};
+
 export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
+
+  const flatStyle = style ? StyleSheet.flatten(style) : {};
+  const fontWeight = flatStyle.fontWeight;
+  const weightFont = fontWeight ? FONT_BY_WEIGHT[String(fontWeight)] : undefined;
 
   return (
     <Text
@@ -24,6 +40,7 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
         type === 'linkPrimary' && styles.linkPrimary,
         type === 'code' && styles.code,
         style,
+        weightFont && { fontFamily: weightFont },
       ]}
       {...rest}
     />
@@ -34,32 +51,27 @@ const styles = StyleSheet.create({
   small: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 500,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.medium,
   },
   smallBold: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: 700,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.bold,
   },
   default: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: 500,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.medium,
   },
   title: {
     fontSize: 48,
-    fontWeight: 600,
     lineHeight: 52,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.semiBold,
   },
   subtitle: {
     fontSize: 32,
     lineHeight: 44,
-    fontWeight: 700,
-    fontFamily: Fonts.sans,
+    fontFamily: Fonts.bold,
   },
   link: {
     lineHeight: 30,
@@ -73,8 +85,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
   },
   code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
+    fontFamily: Platform.select({ android: Fonts.bold }) ?? Fonts.medium,
     fontSize: 12,
   },
 });

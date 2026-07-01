@@ -13,7 +13,7 @@ import { signOutGoogle } from '@/lib/google-signin';
 import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
 import { BugReportModal } from '@/components/ui/bug-report-modal';
-import { Colors } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 
 const SHADOW_OFFSET = 3;
 
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 20,
-    fontWeight: 700,
+    fontFamily: Fonts.bold,
     lineHeight: 28,
   },
   divider: {
@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
-    fontWeight: 700,
+    fontFamily: Fonts.bold,
     lineHeight: 24,
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: 700,
+    fontFamily: Fonts.bold,
     lineHeight: 24,
     color: Colors.white,
   },

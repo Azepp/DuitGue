@@ -1,9 +1,10 @@
 import { createContext, useCallback, useContext, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
+import { ThemedText } from "@/components/themed-text";
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 type ToastType = 'success' | 'error';
 
@@ -66,7 +67,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 size={20}
                 color={Colors.white}
               />
-              <Text style={styles.text}>{message}</Text>
+              <ThemedText style={styles.text}>{message}</ThemedText>
             </View>
           </Animated.View>
         </View>
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: Fonts.bold,
     color: Colors.white,
     flexShrink: 1,
   },

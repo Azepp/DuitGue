@@ -1,6 +1,6 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { TouchableOpacity, View, StyleSheet, type GestureResponderEvent } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { ThemedText } from "@/components/themed-text";
 
 export type CategoryItem = {
@@ -141,6 +141,6 @@ const styles = StyleSheet.create({
   },
   name: {
     flex: 1,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
   },
 });

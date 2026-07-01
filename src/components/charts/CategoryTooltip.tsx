@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Colors, Spacing } from "@/constants/theme";
+import { Pressable, StyleSheet, View } from "react-native";
+import { ThemedText } from "@/components/themed-text";
+import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { formatRupiah } from "@/lib/utils";
 import type { CategorySummary } from "@/types/grafik";
 
@@ -21,13 +22,13 @@ export function CategoryTooltip({ category, x, y, onClose }: Props) {
             <MaterialCommunityIcons name={category.icon as any} size={18} color={Colors.white} />
           </View>
           <View style={styles.info}>
-            <Text style={styles.name}>{category.name}</Text>
-            <Text style={styles.detail}>
+            <ThemedText style={styles.name}>{category.name}</ThemedText>
+            <ThemedText style={styles.detail}>
               {formatRupiah(category.amount)}{" "}
-              <Text style={[styles.percent, { color: category.color }]}>
+              <ThemedText style={[styles.percent, { color: category.color }]}>
                 {category.percentage}%
-              </Text>
-            </Text>
+              </ThemedText>
+            </ThemedText>
           </View>
         </View>
       </View>
@@ -78,16 +79,16 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     color: Colors.black,
   },
   detail: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: Fonts.semiBold,
     color: Colors.black,
     marginTop: 2,
   },
   percent: {
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
 });

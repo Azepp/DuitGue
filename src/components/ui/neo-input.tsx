@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontFamily: Fonts.light,
+    fontFamily: Fonts.medium,
     fontSize: 16,
     color: Colors.black,
     padding: 16,

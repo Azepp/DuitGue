@@ -1,12 +1,12 @@
-import { useState, useCallback, useMemo, useRef, createContext, useContext } from 'react';
+import { useState, useCallback, useMemo, createContext, useContext } from 'react';
 import {
   View,
   TouchableOpacity,
-  Pressable,
   Modal,
   StyleSheet,
   Platform,
   Animated,
+  PanResponder,
   useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,12 +70,9 @@ function NumpadButton({
   return (
     <View style={styles.numpadBtnShadow}>
       <View style={styles.numpadBtnShadowFill} pointerEvents="none" />
-      <Pressable
-        style={({ pressed }) => [
-          styles.numpadBtn,
-          danger && styles.numpadBtnDanger,
-          pressed && { transform: [{ translateX: 2 }, { translateY: 2 }], shadowOpacity: 0 },
-        ]}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={[styles.numpadBtn, danger && styles.numpadBtnDanger]}
         onPress={onPress}
       >
         {icon ? (
@@ -83,7 +80,7 @@ function NumpadButton({
         ) : (
           <ThemedText style={[styles.numpadBtnText, danger && { color: Colors.white }]}>{label}</ThemedText>
         )}
-      </Pressable>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -109,6 +106,32 @@ export function AddModalProvider({
   const { height: screenHeight } = useWindowDimensions();
 
   const [sheetTranslateY] = useState(() => new Animated.Value(screenHeight));
+
+  const panHandlers = useMemo(
+    () =>
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => false,
+        onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 10,
+        onPanResponderMove: (_, gs) => {
+          if (gs.dy > 0) {
+            sheetTranslateY.setValue(gs.dy);
+          }
+        },
+        onPanResponderRelease: (_, gs) => {
+          if (gs.dy > 100 || gs.vy > 0.5) {
+            close();
+          } else {
+            Animated.spring(sheetTranslateY, {
+              toValue: 0,
+              useNativeDriver: true,
+              damping: 20,
+              stiffness: 200,
+            }).start();
+          }
+        },
+      }).panHandlers,
+    [],
+  );
 
   const isCalcMode = pendingAmount !== null && operation !== null;
 
@@ -261,7 +284,9 @@ export function AddModalProvider({
 
   const sheetContent = (
     <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }], paddingBottom: insets.bottom + Spacing.four }]}>
-      <View style={styles.handleArea}>
+      <TouchableOpacity style={styles.backdropExtender} activeOpacity={1} onPress={close} />
+
+      <View style={styles.handleArea} {...panHandlers}>
         <View style={styles.handle} />
       </View>
 
@@ -272,6 +297,7 @@ export function AddModalProvider({
           value={note}
           onChangeText={setNote}
           maxLength={200}
+          style={{ fontFamily: Fonts.semiBold }}
         />
       </View>
 
@@ -374,8 +400,7 @@ export function AddModalProvider({
       {Platform.OS === 'android' ? (
         visible && (
           <View style={styles.overlayAbsolute}>
-            <Pressable style={styles.backdropTouch} onPress={close} />
-            <View style={styles.sheetWrapper}>
+            <View style={styles.overlay}>
               {sheetContent}
             </View>
           </View>
@@ -383,10 +408,7 @@ export function AddModalProvider({
       ) : (
         <Modal visible={visible} transparent animationType="none" onRequestClose={close}>
           <View style={styles.overlay}>
-            <Pressable style={styles.backdropTouch} onPress={close} />
-            <View style={styles.sheetWrapper}>
-              {sheetContent}
-            </View>
+            {sheetContent}
           </View>
         </Modal>
       )}
@@ -409,18 +431,14 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    justifyContent: 'flex-end',
     zIndex: 1000,
   },
-  backdropTouch: {
+  backdropExtender: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  sheetWrapper: {
-    zIndex: 1001,
+    bottom: '100%',
+    left: -100,
+    right: -100,
+    height: 2000,
   },
   sheet: {
     backgroundColor: Colors.background,
@@ -464,14 +482,17 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.black,
     borderRadius: 12,
-    padding: Spacing.three,
+    paddingVertical: Spacing.threeHalf,
+    paddingHorizontal: Spacing.three,
     backgroundColor: Colors.white,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   amountText: {
     fontSize: 36,
     fontFamily: Fonts.bold,
     color: Colors.black,
+    lineHeight: 44,
   },
   confirmBar: {
     flexDirection: 'row',

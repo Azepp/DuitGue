@@ -10,6 +10,9 @@ import { supabase } from "@/lib/supabase";
 import { formatRupiah } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth-store";
+import { cacheQueryData, getCachedData, offlineDelete } from "@/lib/offline";
+import { getQueueLength } from "@/lib/sync-queue";
+import { useNetwork } from "@/lib/network";
 
 const MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -39,33 +42,37 @@ function getDaysInMonth(year: number, month: number) {
 
 export default function HomeScreen() {
   const session = useAuthStore((s) => s.session);
+  const { isOnline } = useNetwork();
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [expandedTxId, setExpandedTxId] = useState<string | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
 
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  const deleteMutation = useMutation({
-    mutationFn: async (txId: string) => {
-      const { error } = await supabase.from("transactions").delete().eq("id", txId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+  useEffect(() => {
+    setPendingCount(getQueueLength());
+    const interval = setInterval(() => {
+      setPendingCount(getQueueLength());
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleDeleteTx = useCallback(
+    async (tx: TransactionWithCategory) => {
+      if (!session?.user.id) return;
+      await offlineDelete("transactions", tx.id, session.user.id, ["transactions"]);
       showToast("Catatan berhasil dihapus!");
     },
-  });
+    [session?.user.id, selectedYear, selectedMonth, showToast],
+  );
 
   const handleEditTx = useCallback((tx: TransactionWithCategory) => {
     router.push({ pathname: "/(app)/add-transaction", params: { edit: tx.id } as Record<string, string> });
   }, []);
-
-  const handleDeleteTx = useCallback((tx: TransactionWithCategory) => {
-    deleteMutation.mutate(tx.id);
-  }, [deleteMutation]);
 
   const selectedMonthLabel = `${MONTHS[selectedMonth]} ${selectedYear}`;
 
@@ -79,9 +86,16 @@ export default function HomeScreen() {
     queryKey: ["profile", userId],
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
-      return data as { display_name: string } | null;
+      const profileData = data as { id: string; display_name: string } | null;
+      if (profileData) cacheQueryData("profiles", [{ ...profileData, id: userId }]);
+      return profileData as { display_name: string } | null;
     },
     enabled: !!userId,
+    placeholderData: () => {
+      const cached = getCachedData<{ id: string; display_name: string }>("profiles");
+      const match = cached.find((p) => p.id === userId);
+      return match || null;
+    },
   });
 
   const displayName = profile?.display_name || session?.user?.user_metadata?.display_name || "UserDuit";
@@ -115,9 +129,14 @@ export default function HomeScreen() {
         .from("transactions")
         .select("amount, type")
         .eq("user_id", userId);
-      return (data ?? []) as { amount: number; type: "pengeluaran" | "pemasukan" }[];
+      const result = (data ?? []) as { amount: number; type: "pengeluaran" | "pemasukan" }[];
+      return result;
     },
     enabled: !!userId,
+    placeholderData: () => {
+      const cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan" }>("transactions");
+      return cached.length > 0 ? cached : undefined;
+    },
   });
 
   const balance = useMemo(() => {
@@ -138,9 +157,17 @@ export default function HomeScreen() {
         .lte("date", endOfMonth)
         .order("date", { ascending: false })
         .order("created_at", { ascending: false });
-      return (data ?? []) as TransactionWithCategory[];
+      const result = (data ?? []) as TransactionWithCategory[];
+      cacheQueryData("transactions", result);
+      return result;
     },
     enabled: !!userId,
+    placeholderData: () => {
+      const cached = getCachedData<TransactionWithCategory>("transactions");
+      if (cached.length === 0) return undefined;
+      const matching = cached.filter((tx) => tx.date >= startOfMonth && tx.date <= endOfMonth);
+      return matching.length > 0 ? matching : undefined;
+    },
   });
 
   const monthlyTotals = useMemo(() => {
@@ -202,9 +229,22 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <ThemedText style={styles.greeting}>Haihai, {displayName}</ThemedText>
-        <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
-          <MaterialCommunityIcons name="magnify" size={20} color={Colors.black} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {!isOnline && (
+            <View style={styles.offlineBadge}>
+              <MaterialCommunityIcons name="wifi-off" size={14} color={Colors.white} />
+              <ThemedText style={styles.offlineBadgeText}>Offline</ThemedText>
+            </View>
+          )}
+          {pendingCount > 0 && (
+            <View style={styles.syncBadge}>
+              <ThemedText style={styles.syncBadgeText}>{pendingCount}</ThemedText>
+            </View>
+          )}
+          <TouchableOpacity style={styles.searchBtn} onPress={() => router.push('/search')}>
+            <MaterialCommunityIcons name="magnify" size={20} color={Colors.black} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
@@ -376,6 +416,42 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+  },
+  offlineBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.textSecondary,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  offlineBadgeText: {
+    fontSize: 10,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
+  },
+  syncBadge: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.primary,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  syncBadgeText: {
+    fontSize: 10,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+  },
   searchBtn: {
     width: 36,
     height: 36,
@@ -413,7 +489,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.black,
     borderRadius: 16,
-    padding: Spacing.three,
+    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.three,
   },
   dashboardHeader: {
     flexDirection: "row",
@@ -495,6 +572,7 @@ const styles = StyleSheet.create({
   },
   dateLabel: {
     fontSize: 12,
+    lineHeight: 18,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
@@ -505,11 +583,13 @@ const styles = StyleSheet.create({
   },
   datePengeluaran: {
     fontSize: 11,
+    lineHeight: 16,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
   datePemasukan: {
     fontSize: 11,
+    lineHeight: 16,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
@@ -553,11 +633,13 @@ const styles = StyleSheet.create({
   },
   txName: {
     fontSize: 14,
+    lineHeight: 20,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
   txNote: {
     fontSize: 12,
+    lineHeight: 16,
     fontFamily: Fonts.medium,
     color: Colors.textSecondary,
     marginTop: 2,

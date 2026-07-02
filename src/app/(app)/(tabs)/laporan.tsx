@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase";
 import { formatRupiah } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { YearFilterDropdown } from "@/components/laporan/year-filter-dropdown";
+import { useNetwork } from "@/lib/network";
 
 const formatNumber = (n: number) => n.toLocaleString("id-ID");
 
@@ -40,6 +41,7 @@ type LaporanData = {
 
 export default function LaporanScreen() {
   const session = useAuthStore((s) => s.session);
+  const { isOnline } = useNetwork();
   const userId = session?.user.id;
 
   const [selectedYear, setSelectedYear] = useState<string | "all">("all");
@@ -72,6 +74,7 @@ export default function LaporanScreen() {
   const { data: summary, isLoading } = useQuery<LaporanData>({
     queryKey: ["laporanSummary", selectedYear, userId],
     queryFn: async () => {
+      if (!userId) return { yearlySummaries: [], grandTotal: { pengeluaran: 0, pemasukan: 0, saldo: 0 } };
       let query = supabase
         .from("transactions")
         .select("amount, type, date")
@@ -145,7 +148,15 @@ export default function LaporanScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <ThemedText style={styles.greeting}>Laporan</ThemedText>
+        <View style={styles.headerLeft}>
+          <ThemedText style={styles.greeting}>Laporan</ThemedText>
+          {!isOnline && (
+            <View style={styles.offlineBadgeLaporan}>
+              <MaterialCommunityIcons name="wifi-off" size={12} color={Colors.white} />
+              <ThemedText style={styles.offlineBadgeTextLaporan}>Offline</ThemedText>
+            </View>
+          )}
+        </View>
         <YearFilterDropdown
           years={years}
           selectedYear={selectedYear}
@@ -235,6 +246,27 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.pageY,
     paddingBottom: Spacing.two,
   },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+  },
+  offlineBadgeLaporan: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.textSecondary,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  offlineBadgeTextLaporan: {
+    fontSize: 10,
+    fontFamily: Fonts.bold,
+    color: Colors.white,
+  },
   greeting: {
     fontSize: 24,
     fontFamily: Fonts.bold,
@@ -283,7 +315,8 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: Colors.black,
     borderRadius: 16,
-    padding: Spacing.three,
+    paddingVertical: Spacing.four,
+    paddingHorizontal: Spacing.three,
   },
   dashboardLabel: {
     fontSize: 16,

@@ -1,5 +1,5 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Animated, FlatList, PanResponder, StyleSheet, TouchableOpacity, View, useWindowDimensions } from "react-native";
@@ -12,6 +12,8 @@ import { queryClient } from "@/lib/query-client";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth-store";
+import { offlineInsert, offlineUpdate, cacheQueryData, getCachedData } from "@/lib/offline";
+import { generateId } from "@/lib/utils";
 
 type Category = {
   id: string;
@@ -59,14 +61,30 @@ function AddTransactionContent() {
 
   const { data: pengeluaranCategories } = useQuery({
     queryKey: ["categories", "pengeluaran", session?.user.id],
-    queryFn: () => fetchCategories("pengeluaran"),
+    queryFn: async () => {
+      const result = await fetchCategories("pengeluaran");
+      if (result.length > 0) cacheQueryData("categories", result);
+      return result;
+    },
     enabled: !!session?.user.id,
+    placeholderData: () => {
+      const cached = getCachedData<Category>("categories");
+      return cached.filter((c) => c.type === "pengeluaran");
+    },
   });
 
   const { data: pemasukanCategories } = useQuery({
     queryKey: ["categories", "pemasukan", session?.user.id],
-    queryFn: () => fetchCategories("pemasukan"),
+    queryFn: async () => {
+      const result = await fetchCategories("pemasukan");
+      if (result.length > 0) cacheQueryData("categories", result);
+      return result;
+    },
     enabled: !!session?.user.id,
+    placeholderData: () => {
+      const cached = getCachedData<Category>("categories");
+      return cached.filter((c) => c.type === "pemasukan");
+    },
   });
 
   const { data: editTransaction } = useQuery({
@@ -255,44 +273,39 @@ function AddTransactionContent() {
 
 function AddTransactionProvider() {
   const { showToast } = useToast();
-  const saveMutation = useMutation({
-    mutationFn: async (data: TransactionData) => {
-      const session = useAuthStore.getState().session;
-      if (!session) throw new Error("Not authenticated");
+  const session = useAuthStore((s) => s.session);
+
+  const handleSubmit = useCallback(
+    async (data: TransactionData) => {
+      if (!session?.user.id) return;
+
+      const now = new Date();
+      const txId = data.id || generateId();
+      const txItem = {
+        id: txId,
+        user_id: session.user.id,
+        category_id: data.category_id,
+        amount: data.amount,
+        type: data.type,
+        note: data.note || null,
+        date: data.date,
+        created_at: now.toISOString(),
+      };
 
       if (data.id) {
-        const { error } = await supabase
-          .from("transactions")
-          .update({
-            category_id: data.category_id,
-            amount: data.amount,
-            type: data.type,
-            note: data.note || null,
-            date: data.date,
-          })
-          .eq("id", data.id);
-        if (error) throw error;
+        await offlineUpdate("transactions", txItem as any, ["transactions"]);
       } else {
-        const { error } = await supabase.from("transactions").insert({
-          user_id: session.user.id,
-          category_id: data.category_id,
-          amount: data.amount,
-          type: data.type,
-          note: data.note || null,
-          date: data.date,
-        });
-        if (error) throw error;
+        await offlineInsert("transactions", txItem as any, ["transactions"]);
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
       showToast("Catatan berhasil disimpan!");
       router.back();
     },
-  });
+    [session?.user.id, showToast],
+  );
 
   return (
-    <AddModalProvider onSubmit={(data) => saveMutation.mutate(data)}>
+    <AddModalProvider onSubmit={handleSubmit}>
       <AddTransactionContent />
     </AddModalProvider>
   );

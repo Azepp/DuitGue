@@ -21,7 +21,10 @@ export type UpdateInfo = {
   latestVersion: string;
   downloadUrl: string;
   releaseNotes: string;
+  isForceUpdate: boolean;
 };
+
+const MIN_VERSION_REGEX = /min_version[:\s]+v?(\d+\.\d+\.\d+)/i;
 
 export async function checkForUpdate(
   currentVersion: string,
@@ -37,15 +40,27 @@ export async function checkForUpdate(
 
     const release = await res.json();
     const latestVersion = release.tag_name?.replace(/^v/, "") ?? "";
+    const apkAsset = release.assets?.find(
+      (a: { name: string }) => a.name.endsWith(".apk"),
+    );
     const downloadUrl =
-      release.assets?.[0]?.browser_download_url ?? release.html_url;
+      apkAsset?.browser_download_url ??
+      release.assets?.[0]?.browser_download_url ??
+      release.html_url;
     const releaseNotes = release.body ?? "";
 
+    const hasUpdate = isNewer(latestVersion, currentVersion);
+
+    const minMatch = releaseNotes.match(MIN_VERSION_REGEX);
+    const minVersion = minMatch?.[1] ?? latestVersion;
+    const isForceUpdate = hasUpdate && isNewer(minVersion, currentVersion);
+
     return {
-      hasUpdate: isNewer(latestVersion, currentVersion),
+      hasUpdate,
       latestVersion,
       downloadUrl,
       releaseNotes,
+      isForceUpdate,
     };
   } catch {
     return null;

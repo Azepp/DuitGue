@@ -8,6 +8,7 @@ type UpdateModalProps = {
   latestVersion: string;
   downloadUrl: string;
   releaseNotes: string;
+  isForceUpdate: boolean;
   onClose: () => void;
 };
 
@@ -16,6 +17,7 @@ export function UpdateModal({
   latestVersion,
   downloadUrl,
   releaseNotes,
+  isForceUpdate,
   onClose,
 }: UpdateModalProps) {
   const handleDownload = () => {
@@ -27,17 +29,29 @@ export function UpdateModal({
     : [];
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={isForceUpdate ? undefined : onClose}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          <View style={styles.iconWrap}>
-            <MaterialCommunityIcons name="cellphone-arrow-down" size={36} color={Colors.black} />
+          <View style={[styles.iconWrap, isForceUpdate && { backgroundColor: Colors.danger }]}>
+            <MaterialCommunityIcons
+              name={isForceUpdate ? "alert-decagram" : "cellphone-arrow-down"}
+              size={36}
+              color={Colors.black}
+            />
           </View>
 
-          <ThemedText style={styles.title}>Update Tersedia!</ThemedText>
+          <ThemedText style={styles.title}>
+            {isForceUpdate ? "Wajib Update!" : "Update Tersedia!"}
+          </ThemedText>
           <ThemedText style={styles.subtitle}>
             Versi terbaru: <ThemedText>v{latestVersion}</ThemedText>
           </ThemedText>
+
+          {isForceUpdate && (
+            <ThemedText style={styles.forceNote}>
+              Versi ini udah gak didukung. Download versi terbaru buat lanjut pake DuitGue.
+            </ThemedText>
+          )}
 
           {notes.length > 0 && (
             <View style={styles.notesWrap}>
@@ -51,11 +65,13 @@ export function UpdateModal({
           )}
 
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.laterBtn} onPress={onClose} activeOpacity={0.8}>
-              <ThemedText style={styles.laterBtnText}>Nanti aja</ThemedText>
-            </TouchableOpacity>
+            {!isForceUpdate && (
+              <TouchableOpacity style={styles.laterBtn} onPress={onClose} activeOpacity={0.8}>
+                <ThemedText style={styles.laterBtnText}>Nanti aja</ThemedText>
+              </TouchableOpacity>
+            )}
 
-            <View style={styles.downloadShadowWrap}>
+            <View style={[styles.downloadShadowWrap, isForceUpdate && { flex: 1 }]}>
               <View style={styles.downloadShadowFill} pointerEvents="none" />
               <TouchableOpacity style={styles.downloadBtn} onPress={handleDownload} activeOpacity={0.8}>
                 <MaterialCommunityIcons name="download" size={20} color={Colors.black} />
@@ -127,6 +143,14 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
+  },
+  forceNote: {
+    fontSize: 13,
+    fontFamily: Fonts.medium,
+    color: Colors.danger,
+    textAlign: "center",
+    marginBottom: Spacing.three,
+    lineHeight: 18,
   },
   noteLine: {
     fontSize: 12,

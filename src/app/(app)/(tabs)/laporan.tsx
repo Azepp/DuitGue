@@ -10,6 +10,8 @@ import { formatRupiah } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { YearFilterDropdown } from "@/components/laporan/year-filter-dropdown";
 import { useNetwork } from "@/lib/network";
+import { cacheQueryData, getCachedData } from "@/lib/offline";
+import { localDb } from "@/lib/local-db";
 
 const formatNumber = (n: number) => n.toLocaleString("id-ID");
 
@@ -66,10 +68,59 @@ export default function LaporanScreen() {
       for (let y = currentYear; y >= firstYear; y--) {
         yearsList.push(String(y));
       }
+      if (yearsList.length > 0) localDb.upsert("laporan_meta", { id: "years", years: yearsList });
       return yearsList;
     },
     enabled: !!userId,
+    placeholderData: () => {
+      const cached = getCachedData<{ id: string; years: string[] }>("laporan_meta");
+      const meta = cached.find((m) => m.id === "years");
+      return meta?.years;
+    },
   });
+
+  const computeSummaryFromData = (data: { amount: number; type: string; date: string }[]) => {
+    const byYear: Record<number, Record<number, MonthSummary>> = {};
+    for (const tx of data) {
+      const d = new Date(tx.date + "T00:00:00");
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      if (!byYear[year]) byYear[year] = {};
+      if (!byYear[year][month]) {
+        byYear[year][month] = { month, monthLabel: MONTHS[month], pengeluaran: 0, pemasukan: 0, saldo: 0 };
+      }
+      if (tx.type === "pengeluaran") {
+        byYear[year][month].pengeluaran += tx.amount;
+      } else {
+        byYear[year][month].pemasukan += tx.amount;
+      }
+    }
+    const yearlySummaries: YearSummary[] = Object.entries(byYear)
+      .sort(([a], [b]) => Number(b) - Number(a))
+      .map(([yearStr, monthsMap]) => {
+        const months = Object.values(monthsMap)
+          .map((m) => ({ ...m, saldo: m.pemasukan - m.pengeluaran }))
+          .sort((a, b) => b.month - a.month);
+        const totalPengeluaran = months.reduce((s, m) => s + m.pengeluaran, 0);
+        const totalPemasukan = months.reduce((s, m) => s + m.pemasukan, 0);
+        return {
+          year: Number(yearStr),
+          months,
+          totalPengeluaran,
+          totalPemasukan,
+          totalSaldo: totalPemasukan - totalPengeluaran,
+        };
+      });
+    const grandTotal = yearlySummaries.reduce(
+      (acc, y) => ({
+        pengeluaran: acc.pengeluaran + y.totalPengeluaran,
+        pemasukan: acc.pemasukan + y.totalPemasukan,
+        saldo: acc.saldo + y.totalSaldo,
+      }),
+      { pengeluaran: 0, pemasukan: 0, saldo: 0 },
+    );
+    return { yearlySummaries, grandTotal };
+  };
 
   const { data: summary, isLoading } = useQuery<LaporanData>({
     queryKey: ["laporanSummary", selectedYear, userId],
@@ -91,55 +142,23 @@ export default function LaporanScreen() {
         return { yearlySummaries: [], grandTotal: { pengeluaran: 0, pemasukan: 0, saldo: 0 } };
       }
 
-      const byYear: Record<number, Record<number, MonthSummary>> = {};
-
-      for (const tx of data) {
-        const d = new Date(tx.date + "T00:00:00");
-        const year = d.getFullYear();
-        const month = d.getMonth();
-
-        if (!byYear[year]) byYear[year] = {};
-        if (!byYear[year][month]) {
-          byYear[year][month] = { month, monthLabel: MONTHS[month], pengeluaran: 0, pemasukan: 0, saldo: 0 };
-        }
-
-        if (tx.type === "pengeluaran") {
-          byYear[year][month].pengeluaran += tx.amount;
-        } else {
-          byYear[year][month].pemasukan += tx.amount;
-        }
+      const result = data as { amount: number; type: string; date: string }[];
+      if (result.length > 0) {
+        result.forEach((tx) => localDb.upsert("laporan_transactions", { id: `${tx.date}_${tx.amount}_${tx.type}_${Math.random()}`, ...tx }));
       }
 
-      const yearlySummaries: YearSummary[] = Object.entries(byYear)
-        .sort(([a], [b]) => Number(b) - Number(a))
-        .map(([yearStr, monthsMap]) => {
-          const months = Object.values(monthsMap)
-            .map((m) => ({ ...m, saldo: m.pemasukan - m.pengeluaran }))
-            .sort((a, b) => b.month - a.month);
-
-          const totalPengeluaran = months.reduce((s, m) => s + m.pengeluaran, 0);
-          const totalPemasukan = months.reduce((s, m) => s + m.pemasukan, 0);
-          return {
-            year: Number(yearStr),
-            months,
-            totalPengeluaran,
-            totalPemasukan,
-            totalSaldo: totalPemasukan - totalPengeluaran,
-          };
-        });
-
-      const grandTotal = yearlySummaries.reduce(
-        (acc, y) => ({
-          pengeluaran: acc.pengeluaran + y.totalPengeluaran,
-          pemasukan: acc.pemasukan + y.totalPemasukan,
-          saldo: acc.saldo + y.totalSaldo,
-        }),
-        { pengeluaran: 0, pemasukan: 0, saldo: 0 },
-      );
-
-      return { yearlySummaries, grandTotal };
+      return computeSummaryFromData(result);
     },
     enabled: !!userId,
+    placeholderData: () => {
+      const cached = getCachedData<{ id: string; amount: number; type: string; date: string }>("laporan_transactions");
+      if (cached.length === 0) return undefined;
+      let filtered = cached;
+      if (selectedYear !== "all") {
+        filtered = cached.filter((tx) => tx.date >= `${selectedYear}-01-01` && tx.date <= `${selectedYear}-12-31`);
+      }
+      return computeSummaryFromData(filtered);
+    },
   });
 
   const safeSummary = summary ?? { yearlySummaries: [] as YearSummary[], grandTotal: { pengeluaran: 0, pemasukan: 0, saldo: 0 } };

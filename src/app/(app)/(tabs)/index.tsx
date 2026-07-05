@@ -87,7 +87,7 @@ export default function HomeScreen() {
     queryFn: async () => {
       const { data } = await supabase.from("profiles").select("display_name").eq("id", userId).single();
       const profileData = data as { id: string; display_name: string } | null;
-      if (profileData) cacheQueryData("profiles", [{ ...profileData, id: userId }]);
+      if (profileData) cacheQueryData("profiles", [{ ...profileData, id: userId! }]);
       return profileData as { display_name: string } | null;
     },
     enabled: !!userId,
@@ -127,14 +127,16 @@ export default function HomeScreen() {
     queryFn: async () => {
       const { data } = await supabase
         .from("transactions")
-        .select("amount, type")
-        .eq("user_id", userId);
-      const result = (data ?? []) as { amount: number; type: "pengeluaran" | "pemasukan" }[];
+        .select("id, amount, type, date")
+        .eq("user_id", userId)
+        .order("date", { ascending: false });
+      const result = (data ?? []) as { id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }[];
+      if (result.length > 0) cacheQueryData("transactions", result);
       return result;
     },
     enabled: !!userId,
     placeholderData: () => {
-      const cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan" }>("transactions");
+      const cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions");
       return cached.length > 0 ? cached : undefined;
     },
   });
@@ -499,6 +501,7 @@ const styles = StyleSheet.create({
   },
   dashboardLabel: {
     fontSize: 16,
+    lineHeight: 22,
     fontFamily: Fonts.bold,
     color: Colors.black,
     marginBottom: Spacing.one,
@@ -515,6 +518,7 @@ const styles = StyleSheet.create({
   },
   balanceAmount: {
     fontSize: 32,
+    lineHeight: 40,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },

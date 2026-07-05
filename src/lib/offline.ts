@@ -30,7 +30,7 @@ export function initOnlineManager() {
 
 export function cacheQueryData<T extends { id: string }>(table: string, data: T[]) {
   if (!data || data.length === 0) return;
-  localDb.setAll(table, data);
+  data.forEach((item) => localDb.upsert(table, item));
 }
 
 export function getCachedData<T extends { id: string }>(table: string): T[] {
@@ -41,6 +41,14 @@ function updateMatchingCaches(queryKeyPrefix: string[], updateFn: (old: any) => 
   queryClient.getQueryCache().findAll({ queryKey: queryKeyPrefix }).forEach((query) => {
     queryClient.setQueryData(query.queryKey, updateFn);
   });
+}
+
+function invalidateRelatedQueries(queryKeyPrefix: string[]) {
+  queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
+  queryClient.invalidateQueries({ queryKey: ['transactionSummary'] });
+  queryClient.invalidateQueries({ queryKey: ['laporanSummary'] });
+  queryClient.invalidateQueries({ queryKey: ['laporanYears'] });
+  queryClient.invalidateQueries({ queryKey: ['periodOptions'] });
 }
 
 export async function offlineInsert<T extends Record<string, any>>(
@@ -61,10 +69,10 @@ export async function offlineInsert<T extends Record<string, any>>(
   }
 
   try {
-    const { id, user_id, ...insertData } = item;
+    const { id, user_id, ...insertData } = item as any;
     const { error } = await supabase.from(table).insert({ id, ...insertData, user_id: item.user_id });
     if (error) throw error;
-    queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
+    invalidateRelatedQueries(queryKeyPrefix);
     return true;
   } catch {
     enqueue({ table, action: 'insert', data: item, userId: item.user_id });
@@ -90,10 +98,10 @@ export async function offlineUpdate<T extends Record<string, any>>(
   }
 
   try {
-    const { id, user_id, ...rest } = item;
+    const { id, user_id, ...rest } = item as any;
     const { error } = await supabase.from(table).update(rest).eq('id', id);
     if (error) throw error;
-    queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
+    invalidateRelatedQueries(queryKeyPrefix);
     return true;
   } catch {
     enqueue({ table, action: 'update', data: item, userId: item.user_id });
@@ -122,7 +130,7 @@ export async function offlineDelete(
   try {
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (error) throw error;
-    queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
+    invalidateRelatedQueries(queryKeyPrefix);
     return true;
   } catch {
     enqueue({ table, action: 'delete', data: { id }, userId });

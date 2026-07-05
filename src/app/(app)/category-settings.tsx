@@ -14,6 +14,8 @@ import { useToast } from "@/components/ui/toast";
 import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
 import { useAuthStore } from "@/stores/auth-store";
+import { offlineInsert, offlineUpdate, offlineDelete, cacheQueryData, getCachedData } from "@/lib/offline";
+import { generateId } from "@/lib/utils";
 
 
 function CategorySettingsContent() {
@@ -93,14 +95,30 @@ function CategorySettingsContent() {
 
   const { data: pengeluaranList } = useQuery({
     queryKey: ["categories", "pengeluaran", session?.user.id],
-    queryFn: () => fetchCategories("pengeluaran"),
+    queryFn: async () => {
+      const result = await fetchCategories("pengeluaran");
+      if (result.length > 0) cacheQueryData("categories", result);
+      return result;
+    },
     enabled: !!session?.user.id,
+    placeholderData: () => {
+      const cached = getCachedData<CategoryItem>("categories");
+      return cached.filter((c) => c.type === "pengeluaran");
+    },
   });
 
   const { data: pemasukanList } = useQuery({
     queryKey: ["categories", "pemasukan", session?.user.id],
-    queryFn: () => fetchCategories("pemasukan"),
+    queryFn: async () => {
+      const result = await fetchCategories("pemasukan");
+      if (result.length > 0) cacheQueryData("categories", result);
+      return result;
+    },
     enabled: !!session?.user.id,
+    placeholderData: () => {
+      const cached = getCachedData<CategoryItem>("categories");
+      return cached.filter((c) => c.type === "pemasukan");
+    },
   });
 
   const categories = selectedType === "pengeluaran" ? pengeluaranList : pemasukanList;
@@ -129,11 +147,10 @@ function CategorySettingsContent() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("categories").delete().eq("id", id);
-      if (error) throw error;
+      if (!session?.user.id) return;
+      await offlineDelete("categories", id, session.user.id, ["categories"]);
     },
     onSuccess: () => {
-      invalidate();
       showToast("Kategori berhasil dihapus");
     },
   });
@@ -142,21 +159,28 @@ function CategorySettingsContent() {
     mutationFn: async (data: { id?: string; name: string; icon: string; color: string; type: "pengeluaran" | "pemasukan" }) => {
       if (!session?.user.id) throw new Error("Not authenticated");
       if (data.id) {
-        const { error } = await supabase.from("categories").update({ name: data.name, icon: data.icon, color: data.color }).eq("id", data.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("categories").insert({
+        const item = {
+          id: data.id,
           user_id: session.user.id,
           name: data.name,
           icon: data.icon,
           color: data.color,
           type: data.type,
-        });
-        if (error) throw error;
+        };
+        await offlineUpdate("categories", item as any, ["categories"]);
+      } else {
+        const item = {
+          id: generateId(),
+          user_id: session.user.id,
+          name: data.name,
+          icon: data.icon,
+          color: data.color,
+          type: data.type,
+        };
+        await offlineInsert("categories", item as any, ["categories"]);
       }
     },
     onSuccess: () => {
-      invalidate();
       showToast("Kategori berhasil disimpan");
     },
   });

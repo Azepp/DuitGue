@@ -39,6 +39,7 @@ export function getCachedData<T extends { id: string }>(table: string): T[] {
 
 function invalidateRelatedQueries(queryKeyPrefix: string[]) {
   queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
+  queryClient.invalidateQueries({ queryKey: ['transaction'] });
   queryClient.invalidateQueries({ queryKey: ['transactionSummary'] });
   queryClient.invalidateQueries({ queryKey: ['laporanSummary'] });
   queryClient.invalidateQueries({ queryKey: ['laporanYears'] });

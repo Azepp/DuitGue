@@ -87,7 +87,7 @@ function AddTransactionContent() {
     },
   });
 
-  const { data: editTransaction } = useQuery({
+  const { data: editTransaction, isFetching: isEditFetching } = useQuery({
     queryKey: ["transaction", editTxId, session?.user.id],
     queryFn: async () => {
       if (!editTxId || !session?.user.id) return null;
@@ -108,26 +108,29 @@ function AddTransactionContent() {
     setSelectedType(editTransaction.type);
   }
 
-  const hasOpened = useRef(false);
   const editTxRef = useRef<{ id: string; amount: number; note: string; date: string } | null>(null);
+  const openedEditRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (editTransaction && (pengeluaranCategories || pemasukanCategories) && !hasOpened.current) {
-      const allCats = [...(pengeluaranCategories ?? []), ...(pemasukanCategories ?? [])];
-      const cat = allCats.find((c) => c.id === editTransaction.category_id);
-      if (cat) {
-        hasOpened.current = true;
-        const editData = {
-          id: editTransaction.id,
-          amount: editTransaction.amount,
-          note: editTransaction.note ?? "",
-          date: editTransaction.date,
-        };
-        editTxRef.current = editData;
-        addModal.open(cat, editData);
-      }
+    if (!editTransaction || isEditFetching || !(pengeluaranCategories || pemasukanCategories)) return;
+
+    const allCats = [...(pengeluaranCategories ?? []), ...(pemasukanCategories ?? [])];
+    const cat = allCats.find((c) => c.id === editTransaction.category_id);
+    if (!cat) return;
+
+    const editData = {
+      id: editTransaction.id,
+      amount: editTransaction.amount,
+      note: editTransaction.note ?? "",
+      date: editTransaction.date,
+    };
+    const signature = `${editTransaction.id}|${editTransaction.amount}|${editTransaction.note ?? ""}|${editTransaction.date}`;
+    if (openedEditRef.current !== signature) {
+      openedEditRef.current = signature;
+      editTxRef.current = editData;
+      addModal.open(cat, editData);
     }
-  }, [editTransaction, pengeluaranCategories, pemasukanCategories]);
+  }, [editTransaction, isEditFetching, pengeluaranCategories, pemasukanCategories, addModal]);
 
   useEffect(() => {
     Animated.timing(slideAnim, {

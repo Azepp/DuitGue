@@ -30,7 +30,7 @@ export function OTAUpdateModal({ visible, isDownloading, onApply, onClose }: OTA
 
           <View style={styles.actions}>
             <TouchableOpacity style={styles.laterBtn} onPress={onClose} activeOpacity={0.8}>
-              <ThemedText style={styles.laterBtnText}>Nanti aja</ThemedText>
+              <ThemedText style={styles.laterBtnText}>Nanti</ThemedText>
             </TouchableOpacity>
 
             <View style={styles.applyShadowWrap}>
@@ -41,9 +41,9 @@ export function OTAUpdateModal({ visible, isDownloading, onApply, onClose }: OTA
                 activeOpacity={0.8}
                 disabled={isDownloading}
               >
-                <MaterialCommunityIcons name="restart" size={20} color={Colors.black} />
+                <MaterialCommunityIcons name="restart" size={18} color={Colors.black} />
                 <ThemedText style={styles.applyBtnText}>
-                  {isDownloading ? "Mengunduh..." : "Restart Sekarang"}
+                  {isDownloading ? "Mengunduh..." : "Restart"}
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.45)",
   },
   card: {
-    width: 320,
+    width: 340,
     backgroundColor: Colors.white,
     borderWidth: 3,
     borderColor: Colors.black,
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   laterBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.success,
   },
   applyBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: Fonts.bold,
     color: Colors.black,
   },

@@ -25,6 +25,16 @@ const CELL_SIZE = 36;
 export function NeoDatePicker({ visible, date, onDateChange, onClose }: NeoDatePickerProps) {
   const [viewYear, setViewYear] = useState(date.getFullYear());
   const [viewMonth, setViewMonth] = useState(date.getMonth());
+  const [lastOpenedKey, setLastOpenedKey] = useState('');
+
+  if (visible) {
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
+    if (key !== lastOpenedKey) {
+      setLastOpenedKey(key);
+      setViewYear(date.getFullYear());
+      setViewMonth(date.getMonth());
+    }
+  }
 
   const { firstDay, daysInMonth } = useMemo(
     () => getMonthData(viewYear, viewMonth),

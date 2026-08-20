@@ -7,12 +7,13 @@ import { router } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, parseLocalDate } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth-store";
 import { cacheQueryData, getCachedData, offlineDelete } from "@/lib/offline";
 import { getQueueLength } from "@/lib/sync-queue";
 import { useNetwork } from "@/lib/network";
+import { mmkv } from "@/lib/mmkv";
 
 const MONTHS = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -71,7 +72,7 @@ export default function HomeScreen() {
   );
 
   const handleEditTx = useCallback((tx: TransactionWithCategory) => {
-    router.push({ pathname: "/(app)/add-transaction", params: { edit: tx.id } as Record<string, string> });
+    router.push({ pathname: "/(app)/add-transaction", params: { edit: tx.id, type: tx.type } as Record<string, string> });
   }, []);
 
   const selectedMonthLabel = `${MONTHS[selectedMonth]} ${selectedYear}`;
@@ -131,21 +132,30 @@ export default function HomeScreen() {
         .eq("user_id", userId)
         .order("date", { ascending: false });
       const result = (data ?? []) as { id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }[];
-      if (result.length > 0) cacheQueryData("transactions", result);
+      if (result.length > 0) {
+        cacheQueryData("transactions_all", result);
+        const b = result.reduce((acc, t) => t.type === "pemasukan" ? acc + t.amount : acc - t.amount, 0);
+        mmkv.set("cached_balance", b);
+      }
       return result;
     },
     enabled: !!userId,
-    placeholderData: () => {
-      const cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions");
+    initialData: () => {
+      let cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions_all");
+      if (cached.length > 0) return cached;
+      cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions");
       return cached.length > 0 ? cached : undefined;
     },
   });
 
   const balance = useMemo(() => {
-    if (!allTransactions) return 0;
-    return allTransactions.reduce((acc, t) => {
-      return t.type === "pemasukan" ? acc + t.amount : acc - t.amount;
-    }, 0);
+    if (allTransactions) {
+      return allTransactions.reduce((acc, t) => {
+        return t.type === "pemasukan" ? acc + t.amount : acc - t.amount;
+      }, 0);
+    }
+    const cb = mmkv.getNumber("cached_balance");
+    return cb != null ? cb : 0;
   }, [allTransactions]);
 
   const { data: monthlyTransactions } = useQuery({
@@ -196,7 +206,7 @@ export default function HomeScreen() {
     return Object.entries(groups)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([date, transactions]) => {
-        const d = new Date(date + "T00:00:00");
+        const d = parseLocalDate(date);
         const day = d.getDate();
         const monthName = MONTHS[d.getMonth()];
         const dayName = d.toLocaleDateString("id-ID", { weekday: "long" });

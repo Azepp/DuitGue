@@ -6,11 +6,11 @@ import { useQuery } from "@tanstack/react-query";
 
 import { Colors, Fonts, Spacing } from "@/constants/theme";
 import { supabase } from "@/lib/supabase";
-import { formatRupiah } from "@/lib/utils";
+import { formatRupiah, parseLocalDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import { YearFilterDropdown } from "@/components/laporan/year-filter-dropdown";
 import { useNetwork } from "@/lib/network";
-import { cacheQueryData, getCachedData } from "@/lib/offline";
+import { getCachedData } from "@/lib/offline";
 import { localDb } from "@/lib/local-db";
 
 const formatNumber = (n: number) => n.toLocaleString("id-ID");
@@ -61,7 +61,7 @@ export default function LaporanScreen() {
       const currentYear = new Date().getFullYear();
       let firstYear = currentYear;
       if (data && data.length > 0 && data[0].date) {
-        firstYear = new Date(data[0].date).getFullYear();
+        firstYear = parseLocalDate(data[0].date).getFullYear();
       }
 
       const yearsList: string[] = [];
@@ -82,7 +82,7 @@ export default function LaporanScreen() {
   const computeSummaryFromData = (data: { amount: number; type: string; date: string }[]) => {
     const byYear: Record<number, Record<number, MonthSummary>> = {};
     for (const tx of data) {
-      const d = new Date(tx.date + "T00:00:00");
+      const d = parseLocalDate(tx.date);
       const year = d.getFullYear();
       const month = d.getMonth();
       if (!byYear[year]) byYear[year] = {};
@@ -128,7 +128,7 @@ export default function LaporanScreen() {
       if (!userId) return { yearlySummaries: [], grandTotal: { pengeluaran: 0, pemasukan: 0, saldo: 0 } };
       let query = supabase
         .from("transactions")
-        .select("amount, type, date")
+        .select("id, amount, type, date")
         .eq("user_id", userId);
 
       if (selectedYear !== "all") {
@@ -142,9 +142,11 @@ export default function LaporanScreen() {
         return { yearlySummaries: [], grandTotal: { pengeluaran: 0, pemasukan: 0, saldo: 0 } };
       }
 
-      const result = data as { amount: number; type: string; date: string }[];
+      const result = data as { id: string; amount: number; type: string; date: string }[];
       if (result.length > 0) {
-        result.forEach((tx) => localDb.upsert("laporan_transactions", { id: `${tx.date}_${tx.amount}_${tx.type}_${Math.random()}`, ...tx }));
+        localDb.setAll("laporan_transactions", result);
+      } else {
+        localDb.clearTable("laporan_transactions");
       }
 
       return computeSummaryFromData(result);

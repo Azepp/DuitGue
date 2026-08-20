@@ -101,6 +101,13 @@ function AddTransactionContent() {
     enabled: !!editTxId && !!session?.user.id,
   });
 
+  const [syncedEditType, setSyncedEditType] = useState<"pengeluaran" | "pemasukan" | null>(null);
+
+  if (editTransaction?.type && editTransaction.type !== syncedEditType) {
+    setSyncedEditType(editTransaction.type);
+    setSelectedType(editTransaction.type);
+  }
+
   const hasOpened = useRef(false);
   const editTxRef = useRef<{ id: string; amount: number; note: string; date: string } | null>(null);
 

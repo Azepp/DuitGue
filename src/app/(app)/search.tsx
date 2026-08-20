@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/auth-store';
-import { formatRupiah } from '@/lib/utils';
+import { formatRupiah, parseLocalDate } from '@/lib/utils';
 import { ThemedText } from '@/components/themed-text';
 
 const MONTHS = [
@@ -108,7 +108,7 @@ export default function SearchScreen() {
     return Object.entries(groups)
       .sort(([a], [b]) => b.localeCompare(a))
       .map(([date, transactions]) => {
-        const d = new Date(date + 'T00:00:00');
+        const d = parseLocalDate(date);
         const day = d.getDate();
         const monthName = MONTHS[d.getMonth()];
         const dayName = d.toLocaleDateString('id-ID', { weekday: 'long' });

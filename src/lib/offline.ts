@@ -37,12 +37,6 @@ export function getCachedData<T extends { id: string }>(table: string): T[] {
   return localDb.getAll<T>(table);
 }
 
-function updateMatchingCaches(queryKeyPrefix: string[], updateFn: (old: any) => any) {
-  queryClient.getQueryCache().findAll({ queryKey: queryKeyPrefix }).forEach((query) => {
-    queryClient.setQueryData(query.queryKey, updateFn);
-  });
-}
-
 function invalidateRelatedQueries(queryKeyPrefix: string[]) {
   queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
   queryClient.invalidateQueries({ queryKey: ['transactionSummary'] });
@@ -57,11 +51,6 @@ export async function offlineInsert<T extends Record<string, any>>(
   queryKeyPrefix: string[],
 ) {
   localDb.upsert(table, item as any);
-
-  updateMatchingCaches(queryKeyPrefix, (old: any) => {
-    if (Array.isArray(old)) return [item, ...old];
-    return [item];
-  });
 
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'insert', data: item, userId: item.user_id });
@@ -87,11 +76,6 @@ export async function offlineUpdate<T extends Record<string, any>>(
 ) {
   localDb.upsert(table, item as any);
 
-  updateMatchingCaches(queryKeyPrefix, (old: any) => {
-    if (Array.isArray(old)) return old.map((i: any) => (i.id === item.id ? { ...i, ...item } : i));
-    return item;
-  });
-
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'update', data: item, userId: item.user_id });
     return false;
@@ -116,11 +100,6 @@ export async function offlineDelete(
   queryKeyPrefix: string[],
 ) {
   localDb.remove(table, id);
-
-  updateMatchingCaches(queryKeyPrefix, (old: any) => {
-    if (Array.isArray(old)) return old.filter((i: any) => i.id !== id);
-    return old;
-  });
 
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'delete', data: { id }, userId });

@@ -1,4 +1,5 @@
 import { OTAUpdateBanner } from "@/components/ui/ota-update-banner";
+import { OTAUpdateModal } from "@/components/ui/ota-update-modal";
 import { ToastProvider } from "@/components/ui/toast";
 import { UpdateModal } from "@/components/ui/update-modal";
 import { useOTAUpdate } from "@/hooks/use-ota-update";
@@ -30,6 +31,9 @@ export default function RootLayout() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const { isUpdatePending, isDownloading, applyUpdate } = useOTAUpdate();
+  const [otaDismissed, setOtaDismissed] = useState(false);
+
+  const showOtaModal = isUpdatePending && !isDownloading && !otaDismissed;
 
   useEffect(() => {
     initialize();
@@ -72,6 +76,7 @@ export default function RootLayout() {
           </Stack>
         </ToastProvider>
         <UpdateModal visible={!!updateInfo} latestVersion={updateInfo?.latestVersion ?? ""} downloadUrl={updateInfo?.downloadUrl ?? ""} releaseNotes={updateInfo?.releaseNotes ?? ""} isForceUpdate={updateInfo?.isForceUpdate ?? false} onClose={() => setUpdateInfo(null)} />
+        <OTAUpdateModal visible={showOtaModal} isDownloading={isDownloading} onApply={applyUpdate} onClose={() => setOtaDismissed(true)} />
       </ThemeProvider>
     </QueryClientProvider>
   );

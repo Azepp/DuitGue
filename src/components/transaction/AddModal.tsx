@@ -16,6 +16,7 @@ import { NeoInput } from '@/components/ui/neo-input';
 import { NeoDatePicker } from '@/components/ui/date-picker';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { formatLocalDate, parseLocalDate } from '@/lib/utils';
 
 const formatNumber = (n: number) => {
   const s = n.toString();
@@ -141,7 +142,7 @@ export function AddModalProvider({
     setPendingAmount(null);
     setOperation(null);
     setNote(editTx?.note ?? '');
-    setDate(editTx?.date ? new Date(editTx.date + 'T00:00:00') : new Date());
+    setDate(editTx?.date ? parseLocalDate(editTx.date) : new Date());
     setIsEdit(!!editTx);
     setEditId(editTx?.id ?? null);
     setShowDatePicker(false);
@@ -230,7 +231,7 @@ export function AddModalProvider({
       type: category.type,
       amount,
       note,
-      date: date.toISOString().split('T')[0],
+      date: formatLocalDate(date),
     };
     onSubmit?.(data);
     close();

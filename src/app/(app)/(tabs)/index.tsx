@@ -140,10 +140,9 @@ export default function HomeScreen() {
       return result;
     },
     enabled: !!userId,
+    staleTime: 0,
     initialData: () => {
-      let cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions_all");
-      if (cached.length > 0) return cached;
-      cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions");
+      const cached = getCachedData<{ id: string; amount: number; type: "pengeluaran" | "pemasukan"; date: string }>("transactions_all");
       return cached.length > 0 ? cached : undefined;
     },
   });
@@ -170,12 +169,13 @@ export default function HomeScreen() {
         .order("date", { ascending: false })
         .order("created_at", { ascending: false });
       const result = (data ?? []) as TransactionWithCategory[];
-      cacheQueryData("transactions", result);
+      cacheQueryData("transactions_monthly", result);
       return result;
     },
     enabled: !!userId,
+    staleTime: 0,
     placeholderData: () => {
-      const cached = getCachedData<TransactionWithCategory>("transactions");
+      const cached = getCachedData<TransactionWithCategory>("transactions_monthly");
       if (cached.length === 0) return undefined;
       const matching = cached.filter((tx) => tx.date >= startOfMonth && tx.date <= endOfMonth);
       return matching.length > 0 ? matching : undefined;

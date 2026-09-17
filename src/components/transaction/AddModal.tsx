@@ -5,9 +5,7 @@ import {
   Modal,
   StyleSheet,
   Platform,
-  Animated,
-  PanResponder,
-  useWindowDimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -91,7 +89,7 @@ export function AddModalProvider({
   onSubmit,
 }: {
   children: React.ReactNode;
-  onSubmit?: (data: TransactionData) => void;
+  onSubmit?: (data: TransactionData) => Promise<void> | void;
 }) {
   const [visible, setVisible] = useState(false);
   const [category, setCategory] = useState<Category | null>(null);
@@ -103,36 +101,8 @@ export function AddModalProvider({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const insets = useSafeAreaInsets();
-  const { height: screenHeight } = useWindowDimensions();
-
-  const [sheetTranslateY] = useState(() => new Animated.Value(screenHeight));
-
-  const panHandlers = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => false,
-        onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 10,
-        onPanResponderMove: (_, gs) => {
-          if (gs.dy > 0) {
-            sheetTranslateY.setValue(gs.dy);
-          }
-        },
-        onPanResponderRelease: (_, gs) => {
-          if (gs.dy > 100 || gs.vy > 0.5) {
-            close();
-          } else {
-            Animated.spring(sheetTranslateY, {
-              toValue: 0,
-              useNativeDriver: true,
-              damping: 20,
-              stiffness: 200,
-            }).start();
-          }
-        },
-      }).panHandlers,
-    [],
-  );
 
   const isCalcMode = pendingAmount !== null && operation !== null;
 
@@ -147,29 +117,16 @@ export function AddModalProvider({
     setEditId(editTx?.id ?? null);
     setShowDatePicker(false);
     setVisible(true);
-    sheetTranslateY.setValue(screenHeight);
-    Animated.spring(sheetTranslateY, {
-      toValue: 0,
-      useNativeDriver: true,
-      damping: 20,
-      stiffness: 200,
-    }).start();
-  }, [sheetTranslateY, screenHeight]);
+  }, []);
 
   const close = useCallback(() => {
-    Animated.timing(sheetTranslateY, {
-      toValue: screenHeight,
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setVisible(false);
-      setCategory(null);
-      setIsEdit(false);
-      setEditId(null);
-      setPendingAmount(null);
-      setOperation(null);
-    });
-  }, [sheetTranslateY, screenHeight]);
+    setVisible(false);
+    setCategory(null);
+    setIsEdit(false);
+    setEditId(null);
+    setPendingAmount(null);
+    setOperation(null);
+  }, []);
 
   const handleNumpadPress = (value: string) => {
     if (value === '+' || value === '-') {
@@ -221,8 +178,8 @@ export function AddModalProvider({
     });
   };
 
-  const handleSubmit = useCallback(() => {
-    if (!category || amount <= 0) return;
+  const handleSubmit = useCallback(async () => {
+    if (!category || amount <= 0 || isSubmitting) return;
 
     const data: TransactionData = {
       id: editId ?? undefined,
@@ -233,9 +190,14 @@ export function AddModalProvider({
       note,
       date: formatLocalDate(date),
     };
-    onSubmit?.(data);
-    close();
-  }, [category, amount, note, date, editId, close, onSubmit]);
+    setIsSubmitting(true);
+    try {
+      await onSubmit?.(data);
+    } finally {
+      setIsSubmitting(false);
+      close();
+    }
+  }, [category, amount, note, date, editId, close, onSubmit, isSubmitting]);
 
   const formatDate = useCallback((d: Date) => {
     const today = new Date();
@@ -284,10 +246,10 @@ export function AddModalProvider({
   const contextValue = useMemo(() => ({ visible, category, isEdit, open, close }), [visible, category, isEdit, open, close]);
 
   const sheetContent = (
-    <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }], paddingBottom: insets.bottom + Spacing.four }]}>
+    <View style={[styles.sheet, { paddingBottom: insets.bottom + Spacing.four }]}>
       <TouchableOpacity style={styles.backdropExtender} activeOpacity={1} onPress={close} />
 
-      <View style={styles.handleArea} {...panHandlers}>
+      <View style={styles.handleArea}>
         <View style={styles.handle} />
       </View>
 
@@ -377,22 +339,25 @@ export function AddModalProvider({
           <ThemedText style={styles.submitBtnText}>Gaskeun</ThemedText>
         </TouchableOpacity>
       ) : (
-        <View style={styles.submitShadow}>
-          <View style={styles.submitShadowFill} pointerEvents="none" />
-          <TouchableOpacity
-            style={styles.submitBtn}
-            onPress={isCalcMode ? handleNumpadPress.bind(null, '=') : handleSubmit}
-            activeOpacity={0.8}
-          >
-            {isCalcMode ? (
-              <MaterialCommunityIcons name="equal" size={24} color={Colors.black} />
-            ) : (
-              <ThemedText style={styles.submitBtnText}>Gaskeun</ThemedText>
-            )}
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.submitBtn, isSubmitting && styles.submitBtnDisabled]}
+          onPress={isCalcMode && !isSubmitting ? handleNumpadPress.bind(null, '=') : handleSubmit}
+          disabled={isSubmitting}
+          activeOpacity={0.8}
+        >
+          {isCalcMode && !isSubmitting ? (
+            <MaterialCommunityIcons name="equal" size={24} color={Colors.black} />
+          ) : isSubmitting ? (
+            <View style={styles.submitLoadingRow}>
+              <ActivityIndicator size="small" color={Colors.black} />
+              <ThemedText style={styles.submitBtnText}>Ngesave...</ThemedText>
+            </View>
+          ) : (
+            <ThemedText style={styles.submitBtnText}>Gaskeun</ThemedText>
+          )}
+        </TouchableOpacity>
       )}
-    </Animated.View>
+    </View>
   );
 
   return (
@@ -570,19 +535,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.black,
   },
-  submitShadow: {
-    paddingRight: 4,
-    paddingBottom: 4,
-  },
-  submitShadowFill: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    right: 0,
-    bottom: 0,
-    borderRadius: 12,
-    backgroundColor: Colors.black,
-  },
   submitBtn: {
     borderWidth: 3,
     borderColor: Colors.black,
@@ -598,5 +550,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: Fonts.bold,
     color: Colors.black,
+  },
+  submitLoadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
 });

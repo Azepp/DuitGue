@@ -1,5 +1,6 @@
 import { mmkv } from './mmkv';
 import { supabase } from './supabase';
+import { queryClient } from './query-client';
 
 const QUEUE_KEY = 'sync:queue';
 const ENTRY_PREFIX = 'sync:entry:';
@@ -63,6 +64,14 @@ export async function processQueue(): Promise<{ success: number; failed: number 
     } catch {
       failed++;
     }
+  }
+
+  if (success > 0 || failed > 0) {
+    queryClient.invalidateQueries({ queryKey: ['transactions'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['transactionSummary'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['laporanSummary'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['laporanYears'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['periodOptions'], exact: false });
   }
 
   return { success, failed };

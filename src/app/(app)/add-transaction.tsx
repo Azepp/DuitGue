@@ -284,32 +284,38 @@ function AddTransactionContent() {
 function AddTransactionProvider() {
   const { showToast } = useToast();
   const session = useAuthStore((s) => s.session);
+  const isSubmittingRef = useRef(false);
 
   const handleSubmit = useCallback(
     async (data: TransactionData) => {
-      if (!session?.user.id) return;
+      if (!session?.user.id || isSubmittingRef.current) return;
+      isSubmittingRef.current = true;
 
-      const now = new Date();
-      const txId = data.id || generateId();
-      const txItem = {
-        id: txId,
-        user_id: session.user.id,
-        category_id: data.category_id,
-        amount: data.amount,
-        type: data.type,
-        note: data.note || null,
-        date: data.date,
-        created_at: now.toISOString(),
-      };
+      try {
+        const now = new Date();
+        const txId = data.id || generateId();
+        const txItem = {
+          id: txId,
+          user_id: session.user.id,
+          category_id: data.category_id,
+          amount: data.amount,
+          type: data.type,
+          note: data.note || null,
+          date: data.date,
+          created_at: now.toISOString(),
+        };
 
-      if (data.id) {
-        await offlineUpdate("transactions", txItem as any, ["transactions"]);
-      } else {
-        await offlineInsert("transactions", txItem as any, ["transactions"]);
+        if (data.id) {
+          await offlineUpdate("transactions", txItem as any, ["transactions"]);
+        } else {
+          await offlineInsert("transactions", txItem as any, ["transactions"]);
+        }
+
+        showToast("Catatan berhasil disimpan!");
+        router.back();
+      } finally {
+        isSubmittingRef.current = false;
       }
-
-      showToast("Catatan berhasil disimpan!");
-      router.back();
     },
     [session?.user.id, showToast],
   );

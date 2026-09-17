@@ -2,6 +2,7 @@ import { onlineManager } from '@tanstack/react-query';
 import NetInfo from '@react-native-community/netinfo';
 
 import { localDb } from './local-db';
+import { mmkv } from './mmkv';
 import { enqueue } from './sync-queue';
 import { queryClient } from './query-client';
 import { supabase } from './supabase';
@@ -38,12 +39,22 @@ export function getCachedData<T extends { id: string }>(table: string): T[] {
 }
 
 function invalidateRelatedQueries(queryKeyPrefix: string[]) {
-  queryClient.invalidateQueries({ queryKey: queryKeyPrefix });
-  queryClient.invalidateQueries({ queryKey: ['transaction'] });
-  queryClient.invalidateQueries({ queryKey: ['transactionSummary'] });
-  queryClient.invalidateQueries({ queryKey: ['laporanSummary'] });
-  queryClient.invalidateQueries({ queryKey: ['laporanYears'] });
-  queryClient.invalidateQueries({ queryKey: ['periodOptions'] });
+  queryClient.invalidateQueries({ queryKey: queryKeyPrefix, exact: false });
+  queryClient.invalidateQueries({ queryKey: ['transactions'], exact: false });
+  queryClient.invalidateQueries({ queryKey: ['transactionSummary'], exact: false });
+  queryClient.invalidateQueries({ queryKey: ['laporanSummary'], exact: false });
+  queryClient.invalidateQueries({ queryKey: ['laporanYears'], exact: false });
+  queryClient.invalidateQueries({ queryKey: ['periodOptions'], exact: false });
+}
+
+function refreshLocalBalance() {
+  const allTx = localDb.getAll<{ id: string; amount: number; type: 'pengeluaran' | 'pemasukan'; date?: string }>('transactions');
+  const balance = allTx.reduce((acc, t) => t.type === 'pemasukan' ? acc + t.amount : acc - t.amount, 0);
+  mmkv.set('cached_balance', balance);
+  const slim = allTx
+    .filter((t): t is typeof t & { date: string } => typeof t.date === 'string')
+    .map(({ id, amount, type, date }) => ({ id, amount, type, date }));
+  if (slim.length > 0) localDb.setAll('transactions_all', slim);
 }
 
 export async function offlineInsert<T extends Record<string, any>>(
@@ -55,6 +66,7 @@ export async function offlineInsert<T extends Record<string, any>>(
 
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'insert', data: item, userId: item.user_id });
+    refreshLocalBalance();
     return false;
   }
 
@@ -63,9 +75,11 @@ export async function offlineInsert<T extends Record<string, any>>(
     const { error } = await supabase.from(table).insert({ id, ...insertData, user_id: item.user_id });
     if (error) throw error;
     invalidateRelatedQueries(queryKeyPrefix);
+    refreshLocalBalance();
     return true;
   } catch {
     enqueue({ table, action: 'insert', data: item, userId: item.user_id });
+    refreshLocalBalance();
     return false;
   }
 }
@@ -79,6 +93,7 @@ export async function offlineUpdate<T extends Record<string, any>>(
 
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'update', data: item, userId: item.user_id });
+    refreshLocalBalance();
     return false;
   }
 
@@ -87,9 +102,11 @@ export async function offlineUpdate<T extends Record<string, any>>(
     const { error } = await supabase.from(table).update(rest).eq('id', id);
     if (error) throw error;
     invalidateRelatedQueries(queryKeyPrefix);
+    refreshLocalBalance();
     return true;
   } catch {
     enqueue({ table, action: 'update', data: item, userId: item.user_id });
+    refreshLocalBalance();
     return false;
   }
 }
@@ -104,6 +121,7 @@ export async function offlineDelete(
 
   if (!onlineManager.isOnline()) {
     enqueue({ table, action: 'delete', data: { id }, userId });
+    if (table === 'transactions') refreshLocalBalance();
     return false;
   }
 
@@ -111,9 +129,11 @@ export async function offlineDelete(
     const { error } = await supabase.from(table).delete().eq('id', id);
     if (error) throw error;
     invalidateRelatedQueries(queryKeyPrefix);
+    if (table === 'transactions') refreshLocalBalance();
     return true;
   } catch {
     enqueue({ table, action: 'delete', data: { id }, userId });
+    if (table === 'transactions') refreshLocalBalance();
     return false;
   }
 }

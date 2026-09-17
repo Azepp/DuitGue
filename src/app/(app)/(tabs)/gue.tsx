@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Modal, TextInput, Keyboard } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -8,24 +8,29 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { ThemedText } from '@/components/themed-text';
 import { PageLayout } from '@/components/ui/page-layout';
-import { supabase } from '@/lib/supabase';
-import { signOutGoogle } from '@/lib/google-signin';
-import { useAuthStore } from '@/stores/auth-store';
 import { useToast } from '@/components/ui/toast';
 import { BugReportModal } from '@/components/ui/bug-report-modal';
+import { useAuthStore } from '@/stores/auth-store';
+import { supabase } from '@/lib/supabase';
+import { signOutGoogle } from '@/lib/google-signin';
+import { mmkv } from '@/lib/mmkv';
+import { NeoInput } from '@/components/ui/neo-input';
+import { NeoButton } from '@/components/ui/neo-button';
 import { Colors, Fonts } from '@/constants/theme';
 
 const SHADOW_OFFSET = 3;
 
 export default function GueScreen() {
-  const [loading, setLoading] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [bugModalVisible, setBugModalVisible] = useState(false);
   const session = useAuthStore((s) => s.session);
   const user = session?.user;
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const userId = user?.id;
+  const accounts = useAuthStore((s) => s.accounts);
+  const setSession = useAuthStore((s) => s.setSession);
+  const addAccount = useAuthStore((s) => s.addAccount);
+  const removeAccount = useAuthStore((s) => s.removeAccount);
+  const switchAccount = useAuthStore((s) => s.switchAccount);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', userId],
@@ -44,10 +49,15 @@ export default function GueScreen() {
     profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'UserDuit';
   const email = user?.email || '';
 
-  const handleLogout = async () => {
-    setLoading(true);
-    await Promise.all([supabase.auth.signOut(), signOutGoogle()]);
-  };
+  const [modalVisible, setModalVisible] = useState(false);
+  const [bugModalVisible, setBugModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [addingAccount, setAddingAccount] = useState(false);
+  const [newAccountEmail, setNewAccountEmail] = useState('');
+  const [newAccountPassword, setNewAccountPassword] = useState('');
 
   const handleExport = async () => {
     if (exporting) return;
@@ -102,8 +112,75 @@ export default function GueScreen() {
     showToast('Cache berhasil dibersihkan', 'success');
   };
 
-  const handleReportBug = () => {
-    setBugModalVisible(true);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    await signOutGoogle();
+    mmkv.remove('cached_balance');
+    router.replace('/login');
+  };
+
+  const openAccountModal = () => {
+    setModalVisible(true);
+    setPassword('');
+    setSelectedAccount(null);
+  };
+
+  const closeAccountModal = () => {
+    setModalVisible(false);
+    setPassword('');
+    setSelectedAccount(null);
+  };
+
+  const handleSwitchAccount = async () => {
+    if (!password || !selectedAccount) {
+      showToast('Pilih akun dan masukin password', 'error');
+      return;
+    }
+    closeAccountModal();
+    await switchAccount(selectedAccount, password);
+  };
+
+  const handleAddAccount = async () => {
+    if (!newAccountEmail.trim() || !newAccountPassword.trim()) {
+      showToast('Isi email dan password', 'error');
+      return;
+    }
+    setAddingAccount(true);
+    try {
+      await addAccount(newAccountEmail.trim(), newAccountPassword.trim());
+      showToast('Akun baru ditambahkan', 'success');
+      closeAccountModal();
+      setNewAccountEmail('');
+      setNewAccountPassword('');
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal menambah akun', 'error');
+    } finally {
+      setAddingAccount(false);
+    }
+  };
+
+  const renderAccountItems = () => {
+    if (accounts.length === 0) {
+      return (
+        <ThemedText type="default" themeColor="textSecondary">
+          Belum ada akun yang tersimpan
+        </ThemedText>
+      );
+    }
+    return (
+      <View style={styles.accountList}>
+        {accounts.map((accountEmail, index) => (
+          <Pressable
+            key={accountEmail}
+            style={styles.accountItem}
+            onPress={() => setSelectedAccount(accountEmail)}
+          >
+            <MaterialCommunityIcons name="account-outline" size={20} color={Colors.black} />
+            <ThemedText style={styles.accountText}>{accountEmail}</ThemedText>
+          </Pressable>
+        ))}
+      </View>
+    );
   };
 
   return (
@@ -172,9 +249,80 @@ export default function GueScreen() {
               </ThemedText>
             </Pressable>
           </View>
+
+          <View style={styles.menuOuter}>
+            <View style={styles.menuShadow} pointerEvents="none" />
+            <Pressable style={styles.menuItem} onPress={openAccountModal}>
+              <MaterialCommunityIcons name="account-switch" size={22} color={Colors.black} />
+              <ThemedText style={styles.menuText}>Ganti Akun</ThemedText>
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.spacer} />
+        <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeAccountModal}>
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContent}>
+              <ThemedText type="subtitle">Pilih Akun</ThemedText>
+              {renderAccountItems()}
+              {accounts.length > 0 && (
+                <View style={styles.divider} />
+              )}
+              {accounts.length > 0 && (
+                <ThemedText type="small" themeColor="textSecondary">
+                  Tekan akun untuk switch
+                </ThemedText>
+              )}
+              {accounts.length > 0 && (
+                <View style={styles.addAccountRow} onPress={() => setAddingAccount(true)}>
+                  <MaterialCommunityIcons name="plus" size={20} color={Colors.black} />
+                  <ThemedText style={styles.addAccountText}>Tambah Akun</ThemedText>
+                </View>
+              )}
+            </View>
+          </View>
+        </Modal>
+
+        <Modal visible={addingAccount} transparent animationType="fade" onRequestClose={() => setAddingAccount(false)}>
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContent}>
+              <ThemedText type="subtitle">Tambah Akun Baru</ThemedText>
+              <ThemedText type="default" themeColor="textSecondary">Masukin email dan password akun baru</ThemedText>
+              <View style={styles.inputGroup}>
+                <NeoInput
+                  placeholder="email..."
+                  value={newAccountEmail}
+                  onChangeText={setNewAccountEmail}
+                  error={!newAccountEmail.trim()}
+                  errorText="Email harus diisi"
+                />
+                <NeoInput
+                  placeholder="password..."
+                  secureTextEntry
+                  value={newAccountPassword}
+                  onChangeText={setNewAccountPassword}
+                  error={!newAccountPassword.trim()}
+                  errorText="Password harus diisi"
+                />
+              </View>
+              <View style={styles.buttonGroup}>
+                <NeoButton
+                  title="Batal"
+                  variant="secondary"
+                  onPress={() => {
+                    setNewAccountEmail('');
+                    setNewAccountPassword('');
+                    setAddingAccount(false);
+                  }}
+                />
+                <NeoButton
+                  title="Simpan"
+                  variant="primary"
+                  onPress={handleAddAccount}
+                />
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
 
       <BugReportModal
@@ -334,5 +482,79 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
+  },
+
+  // Modal styles
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    maxWidth: 350,
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  modalContentHeader: {
+    width: '100%',
+    marginBottom: 20,
+  },
+  accountList: {
+    marginBottom: 16,
+  },
+  accountItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: 12,
+    backgroundColor: Colors.grayLight,
+    marginBottom: 8,
+  },
+  accountText: {
+    fontSize: 14,
+    fontFamily: Fonts.semiBold,
+    color: Colors.black,
+  },
+  divider: {
+    width: '100%',
+    height: 2,
+    backgroundColor: Colors.black,
+    marginVertical: 8,
+  },
+  addAccountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+  },
+  addAccountText: {
+    color: Colors.white,
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+  },
+  inputGroup: {
+    width: '100%',
+    marginBottom: 16,
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
 });

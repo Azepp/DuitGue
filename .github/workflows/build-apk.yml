@@ -24,15 +24,30 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK (production)
-        run: eas build --profile production-apk --platform android --non-interactive --no-wait
+      - name: Build APK (production) & download
+        run: |
+          eas build --profile production-apk --platform android --non-interactive --wait
+          
+          # Wait for artifact URL to be available
+          for i in {1..30}; do
+            BUILD_URL=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].artifacts.buildUrl')
+            if [[ "$BUILD_URL" != "null" && -n "$BUILD_URL" ]]; then
+              echo "Found build URL: $BUILD_URL"
+              break
+            fi
+            echo "Waiting for artifact... ($i/30)"
+            sleep 10
+          done
+          
+          if [[ "$BUILD_URL" == "null" || -z "$BUILD_URL" ]]; then
+            echo "ERROR: Build artifact URL not found after waiting"
+            eas build:list --platform android --limit 1 --json
+            exit 1
+          fi
+          
+          curl -L "$BUILD_URL" -o app-release.apk
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-
-      - name: Wait for build & download artifact
-        run: |
-          BUILD_URL=$(eas build:list --platform android --limit 1 --json | jq -r '.[0].artifacts.buildUrl')
-          curl -L "$BUILD_URL" -o app-release.apk
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v1

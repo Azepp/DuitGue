@@ -137,7 +137,13 @@ export default function GueScreen() {
       return;
     }
     closeAccountModal();
-    await switchAccount(selectedAccount, password);
+    const result = await switchAccount(selectedAccount, password);
+    if (!result.success) {
+      showToast(result.error || 'Gagal switch akun', 'error');
+      // Re-attempt login with current session if needed
+      setSelectedAccount(null);
+      setPassword('');
+    }
   };
 
   const handleAddAccount = async () => {

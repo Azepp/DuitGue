@@ -65,6 +65,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         const storedPasswords = JSON.parse(storedPasswordsStr);
         const password = storedPasswords[email] || '';
 
+        const currentSession = get().session;
+
         set({ isLoading: true });
         try {
           await supabase.auth.signOut();
@@ -81,12 +83,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ session, isLoading: false });
             return { success: true };
           } else {
-            return { success: false, error: 'Gagal mendapatkan session' };
+            throw new Error('Gagal mendapatkan session');
           }
         } catch (authErr: any) {
+          if (currentSession) {
+            await supabase.auth.setSession(currentSession);
+            set({ session: currentSession, isLoading: false });
+          } else {
+            set({ isLoading: false });
+          }
           return { success: false, error: authErr.message || 'Gagal switch akun' };
-        } finally {
-          set({ isLoading: false });
         }
       } catch (err) {
         return { success: false, error: 'Error tak terduga' };

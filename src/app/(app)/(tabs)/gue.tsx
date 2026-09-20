@@ -15,7 +15,6 @@ import { supabase } from '@/lib/supabase';
 import { signOutGoogle, signInWithGoogle } from '@/lib/google-signin';
 import { mmkv } from '@/lib/mmkv';
 import { NeoInput } from '@/components/ui/neo-input';
-import { NeoButton } from '@/components/ui/neo-button';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 const SHADOW_OFFSET = 3;
@@ -27,9 +26,7 @@ export default function GueScreen() {
   const queryClient = useQueryClient();
   const userId = user?.id;
   const accounts = useAuthStore((s) => s.accounts);
-  const setSession = useAuthStore((s) => s.setSession);
   const addAccount = useAuthStore((s) => s.addAccount);
-  const removeAccount = useAuthStore((s) => s.removeAccount);
   const switchAccount = useAuthStore((s) => s.switchAccount);
 
   const { data: profile } = useQuery({
@@ -51,9 +48,7 @@ export default function GueScreen() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [bugModalVisible, setBugModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [addingAccount, setAddingAccount] = useState(false);
   const [newAccountEmail, setNewAccountEmail] = useState('');
   const [newAccountPassword, setNewAccountPassword] = useState('');
@@ -121,24 +116,17 @@ export default function GueScreen() {
 
   const openAccountModal = () => {
     setModalVisible(true);
-    setSelectedAccount(null);
   };
 
   const closeAccountModal = () => {
     setModalVisible(false);
-    setSelectedAccount(null);
   };
 
-  const handleSwitchAccount = async () => {
-    if (!selectedAccount) {
-      showToast('Pilih akun dulu', 'error');
-      return;
-    }
+  const handleSwitchAccount = async (targetEmail: string) => {
     closeAccountModal();
-    const result = await switchAccount(selectedAccount);
+    const result = await switchAccount(targetEmail);
     if (!result.success) {
       showToast(result.error || 'Gagal switch akun', 'error');
-      setSelectedAccount(null);
     }
   };
 
@@ -196,25 +184,28 @@ export default function GueScreen() {
             key={accountEmail}
             style={[
               styles.accountItem,
-              selectedAccount === accountEmail && styles.accountItemSelected,
+              currentEmail === accountEmail && styles.accountItemActive,
             ]}
-            onPress={() => setSelectedAccount(accountEmail)}
+            onPress={() => {
+              if (accountEmail !== currentEmail) {
+                handleSwitchAccount(accountEmail);
+              }
+            }}
+            disabled={accountEmail === currentEmail}
           >
             <MaterialCommunityIcons name="account-outline" size={20} color={Colors.black} />
             <ThemedText style={styles.accountText}>{accountEmail}</ThemedText>
             {currentEmail === accountEmail && (
               <MaterialCommunityIcons name="check-circle" size={22} color={Colors.success} />
             )}
-            {selectedAccount === accountEmail && currentEmail !== accountEmail && (
-              <MaterialCommunityIcons name="checkbox-marked-circle" size={22} color={Colors.primary} />
+            {currentEmail !== accountEmail && (
+              <MaterialCommunityIcons name="swap-horizontal" size={22} color={Colors.primary} />
             )}
           </Pressable>
         ))}
       </View>
     );
   };
-
-  const canSwitch = selectedAccount !== null;
 
   return (
     <PageLayout>
@@ -282,11 +273,10 @@ export default function GueScreen() {
             <Pressable
               style={styles.logoutBtn}
               onPress={handleLogout}
-              disabled={loading}
             >
               <MaterialCommunityIcons name="logout" size={20} color={Colors.white} />
               <ThemedText style={styles.logoutText}>
-                {loading ? 'Tunggu...' : 'Keluar'}
+                Keluar
               </ThemedText>
             </Pressable>
           </View>
@@ -318,31 +308,6 @@ export default function GueScreen() {
                 <ThemedText type="small" themeColor="textSecondary" style={styles.hintText}>
                   Tekan akun untuk switch
                 </ThemedText>
-              )}
-
-              {accounts.length > 0 && selectedAccount && (
-                <View style={styles.modalActions}>
-                  <View style={styles.cancelOuter}>
-                    <View style={styles.cancelShadow} pointerEvents="none" />
-                    <Pressable
-                      style={styles.cancelBtn}
-                      onPress={closeAccountModal}
-                    >
-                      <ThemedText style={styles.cancelText}>Batal</ThemedText>
-                    </Pressable>
-                  </View>
-
-                  <View style={styles.confirmOuter}>
-                    <View style={styles.confirmShadow} pointerEvents="none" />
-                    <Pressable
-                      style={[styles.confirmBtn, !canSwitch && styles.confirmBtnDisabled]}
-                      onPress={handleSwitchAccount}
-                      disabled={!canSwitch}
-                    >
-                      <ThemedText style={styles.confirmText}>Switch</ThemedText>
-                    </Pressable>
-                  </View>
-                </View>
               )}
 
               <View style={styles.divider} />
@@ -688,6 +653,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.grayLight,
     marginBottom: Spacing.two,
+  },
+  accountItemActive: {
+    borderColor: Colors.success,
+    backgroundColor: '#E8F5E9',
   },
   accountItemSelected: {
     borderColor: Colors.primary,

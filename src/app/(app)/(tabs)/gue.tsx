@@ -242,6 +242,14 @@ export default function GueScreen() {
             </Pressable>
           </View>
 
+          <View style={styles.menuOuter}>
+            <View style={styles.menuShadow} pointerEvents="none" />
+            <Pressable style={styles.menuItem} onPress={openAccountModal}>
+              <MaterialCommunityIcons name="account-switch" size={22} color={Colors.black} />
+              <ThemedText style={styles.menuText}>Ganti Akun</ThemedText>
+            </Pressable>
+          </View>
+
           <View style={styles.logoutOuter}>
             <View style={styles.logoutShadow} pointerEvents="none" />
             <Pressable
@@ -255,35 +263,36 @@ export default function GueScreen() {
               </ThemedText>
             </Pressable>
           </View>
-
-          <View style={styles.menuOuter}>
-            <View style={styles.menuShadow} pointerEvents="none" />
-            <Pressable style={styles.menuItem} onPress={openAccountModal}>
-              <MaterialCommunityIcons name="account-switch" size={22} color={Colors.black} />
-              <ThemedText style={styles.menuText}>Ganti Akun</ThemedText>
-            </Pressable>
-          </View>
         </View>
 
         <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeAccountModal}>
           <View style={styles.modalBackground}>
             <View style={styles.modalContent}>
-              <ThemedText type="subtitle">Pilih Akun</ThemedText>
+              <View style={styles.modalHeader}>
+                <ThemedText type="subtitle">Pilih Akun</ThemedText>
+                <Pressable onPress={closeAccountModal} style={styles.closeBtn} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                  <MaterialCommunityIcons name="close" size={24} color={Colors.black} />
+                </Pressable>
+              </View>
               {renderAccountItems()}
               {accounts.length > 0 && (
-                <View style={styles.divider} />
+                <View style={styles.modalDivider} />
               )}
               {accounts.length > 0 && (
                 <ThemedText type="small" themeColor="textSecondary">
                   Tekan akun untuk switch
                 </ThemedText>
               )}
-              {accounts.length > 0 && (
-                <View style={styles.addAccountRow} onPress={() => setAddingAccount(true)}>
-                  <MaterialCommunityIcons name="plus" size={20} color={Colors.black} />
-                  <ThemedText style={styles.addAccountText}>Tambah Akun</ThemedText>
-                </View>
-              )}
+              <NeoButton
+                title="Tambah Akun"
+                variant="primary"
+                onPress={() => {
+                  setNewAccountEmail('');
+                  setNewAccountPassword('');
+                  setAddingAccount(true);
+                }}
+                style={styles.addAccountBtn}
+              />
             </View>
           </View>
         </Modal>
@@ -298,16 +307,14 @@ export default function GueScreen() {
                   placeholder="email..."
                   value={newAccountEmail}
                   onChangeText={setNewAccountEmail}
-                  error={!newAccountEmail.trim()}
-                  errorText="Email harus diisi"
+                  error={newAccountEmail.trim() ? undefined : 'Email harus diisi'}
                 />
                 <NeoInput
                   placeholder="password..."
                   secureTextEntry
                   value={newAccountPassword}
                   onChangeText={setNewAccountPassword}
-                  error={!newAccountPassword.trim()}
-                  errorText="Password harus diisi"
+                  error={newAccountPassword.trim() ? undefined : 'Password harus diisi'}
                 />
               </View>
               <View style={styles.buttonGroup}>
@@ -507,6 +514,16 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
   },
+  modalHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  closeBtn: {
+    padding: 4,
+  },
   modalContentHeader: {
     width: '100%',
     marginBottom: 20,
@@ -530,28 +547,15 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.semiBold,
     color: Colors.black,
   },
-  divider: {
+  modalDivider: {
     width: '100%',
     height: 2,
     backgroundColor: Colors.black,
     marginVertical: 8,
   },
-  addAccountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 12,
-    padding: 12,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 12,
-    backgroundColor: Colors.primary,
-  },
-  addAccountText: {
-    color: Colors.white,
-    fontSize: 14,
-    fontFamily: Fonts.bold,
+  addAccountBtn: {
+    width: '100%',
+    marginTop: 8,
   },
   inputGroup: {
     width: '100%',

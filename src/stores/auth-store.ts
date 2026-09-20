@@ -10,7 +10,7 @@ type AuthState = {
   setSession: (session: Session | null) => void;
   addAccount: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   removeAccount: (email: string) => Promise<{ success: boolean; error?: string }>;
-  switchAccount: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  switchAccount: (email: string) => Promise<{ success: boolean; error?: string }>;
   initialize: () => Promise<void>;
 };
 
@@ -54,12 +54,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     },
 
-    switchAccount: async (email: string, password: string) => {
+    switchAccount: async (email: string) => {
       try {
         const accountEmail = get().accounts.find((a) => a === email);
         if (!accountEmail) {
           return { success: false, error: 'Akun tidak ditemukan' };
         }
+
+        const storedPasswordsStr = await mmkvStorage.getItem('passwords') ?? '{}';
+        const storedPasswords = JSON.parse(storedPasswordsStr);
+        const password = storedPasswords[email] || '';
 
         set({ isLoading: true });
         try {

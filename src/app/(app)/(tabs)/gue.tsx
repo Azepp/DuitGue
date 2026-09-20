@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pressable, StyleSheet, View, Modal, TextInput, Keyboard } from 'react-native';
+import { Pressable, StyleSheet, View, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -12,11 +12,11 @@ import { useToast } from '@/components/ui/toast';
 import { BugReportModal } from '@/components/ui/bug-report-modal';
 import { useAuthStore } from '@/stores/auth-store';
 import { supabase } from '@/lib/supabase';
-import { signOutGoogle } from '@/lib/google-signin';
+import { signOutGoogle, signInWithGoogle } from '@/lib/google-signin';
 import { mmkv } from '@/lib/mmkv';
 import { NeoInput } from '@/components/ui/neo-input';
 import { NeoButton } from '@/components/ui/neo-button';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 const SHADOW_OFFSET = 3;
 
@@ -54,10 +54,10 @@ export default function GueScreen() {
   const [loading, setLoading] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
-  const [password, setPassword] = useState('');
   const [addingAccount, setAddingAccount] = useState(false);
   const [newAccountEmail, setNewAccountEmail] = useState('');
   const [newAccountPassword, setNewAccountPassword] = useState('');
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleExport = async () => {
     if (exporting) return;
@@ -121,28 +121,24 @@ export default function GueScreen() {
 
   const openAccountModal = () => {
     setModalVisible(true);
-    setPassword('');
     setSelectedAccount(null);
   };
 
   const closeAccountModal = () => {
     setModalVisible(false);
-    setPassword('');
     setSelectedAccount(null);
   };
 
   const handleSwitchAccount = async () => {
-    if (!password || !selectedAccount) {
-      showToast('Pilih akun dan masukin password', 'error');
+    if (!selectedAccount) {
+      showToast('Pilih akun dulu', 'error');
       return;
     }
     closeAccountModal();
-    const result = await switchAccount(selectedAccount, password);
+    const result = await switchAccount(selectedAccount);
     if (!result.success) {
       showToast(result.error || 'Gagal switch akun', 'error');
-      // Re-attempt login with current session if needed
       setSelectedAccount(null);
-      setPassword('');
     }
   };
 
@@ -165,29 +161,60 @@ export default function GueScreen() {
     }
   };
 
+  const handleAddAccountGoogle = async () => {
+    setGoogleLoading(true);
+    try {
+      const { data, error } = await signInWithGoogle();
+      if (error) throw error;
+      if (data?.session && data?.user?.email) {
+        await addAccount(data.user.email, '');
+        showToast('Akun Google ditambahkan', 'success');
+        closeAccountModal();
+      }
+    } catch (err: any) {
+      if (err?.code !== 'SIGN_IN_CANCELLED') {
+        showToast(err?.message || 'Gagal login Google', 'error');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   const renderAccountItems = () => {
     if (accounts.length === 0) {
       return (
-        <ThemedText type="default" themeColor="textSecondary">
+        <ThemedText type="default" themeColor="textSecondary" style={styles.emptyText}>
           Belum ada akun yang tersimpan
         </ThemedText>
       );
     }
+    const currentEmail = user?.email;
     return (
       <View style={styles.accountList}>
         {accounts.map((accountEmail, index) => (
           <Pressable
             key={accountEmail}
-            style={styles.accountItem}
+            style={[
+              styles.accountItem,
+              selectedAccount === accountEmail && styles.accountItemSelected,
+            ]}
             onPress={() => setSelectedAccount(accountEmail)}
           >
             <MaterialCommunityIcons name="account-outline" size={20} color={Colors.black} />
             <ThemedText style={styles.accountText}>{accountEmail}</ThemedText>
+            {currentEmail === accountEmail && (
+              <MaterialCommunityIcons name="check-circle" size={22} color={Colors.success} />
+            )}
+            {selectedAccount === accountEmail && currentEmail !== accountEmail && (
+              <MaterialCommunityIcons name="checkbox-marked-circle" size={22} color={Colors.primary} />
+            )}
           </Pressable>
         ))}
       </View>
     );
   };
+
+  const canSwitch = selectedAccount !== null;
 
   return (
     <PageLayout>
@@ -266,49 +293,144 @@ export default function GueScreen() {
         </View>
 
         <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeAccountModal}>
-          <View style={styles.modalBackground}>
-            <View style={styles.modalContent}>
+          <KeyboardAvoidingView
+            style={styles.modalBackdrop}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <Pressable style={styles.backdropTouch} onPress={closeAccountModal} />
+
+            <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <ThemedText type="subtitle">Pilih Akun</ThemedText>
-                <Pressable onPress={closeAccountModal} style={styles.closeBtn} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-                  <MaterialCommunityIcons name="close" size={24} color={Colors.black} />
+                <MaterialCommunityIcons name="account-multiple" size={24} color={Colors.black} />
+                <ThemedText style={styles.modalTitle}>Pilih Akun</ThemedText>
+                <Pressable onPress={closeAccountModal} hitSlop={12}>
+                  <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
                 </Pressable>
               </View>
+
               {renderAccountItems()}
+
               {accounts.length > 0 && (
                 <View style={styles.modalDivider} />
               )}
+
               {accounts.length > 0 && (
-                <ThemedText type="small" themeColor="textSecondary">
+                <ThemedText type="small" themeColor="textSecondary" style={styles.hintText}>
                   Tekan akun untuk switch
                 </ThemedText>
               )}
-              <NeoButton
-                title="Tambah Akun"
-                variant="primary"
-                onPress={() => {
-                  setNewAccountEmail('');
-                  setNewAccountPassword('');
-                  setAddingAccount(true);
-                }}
-                style={styles.addAccountBtn}
-              />
+
+              {accounts.length > 0 && selectedAccount && (
+                <View style={styles.modalActions}>
+                  <View style={styles.cancelOuter}>
+                    <View style={styles.cancelShadow} pointerEvents="none" />
+                    <Pressable
+                      style={styles.cancelBtn}
+                      onPress={closeAccountModal}
+                    >
+                      <ThemedText style={styles.cancelText}>Batal</ThemedText>
+                    </Pressable>
+                  </View>
+
+                  <View style={styles.confirmOuter}>
+                    <View style={styles.confirmShadow} pointerEvents="none" />
+                    <Pressable
+                      style={[styles.confirmBtn, !canSwitch && styles.confirmBtnDisabled]}
+                      onPress={handleSwitchAccount}
+                      disabled={!canSwitch}
+                    >
+                      <ThemedText style={styles.confirmText}>Switch</ThemedText>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
+              <View style={styles.divider} />
+
+              <ThemedText style={styles.sectionTitle}>Tambah Akun Baru</ThemedText>
+              <View style={styles.addAccountOptions}>
+                <Pressable
+                  style={[
+                    styles.addAccountOption,
+                    { backgroundColor: Colors.white, borderColor: Colors.black },
+                  ]}
+                  onPress={() => {
+                    setNewAccountEmail('');
+                    setNewAccountPassword('');
+                    setAddingAccount(true);
+                  }}
+                >
+                  <MaterialCommunityIcons name="email-outline" size={24} color={Colors.black} />
+                  <ThemedText style={styles.addAccountOptionText}>Email</ThemedText>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.addAccountOption,
+                    { backgroundColor: Colors.white, borderColor: Colors.black },
+                  ]}
+                  onPress={handleAddAccountGoogle}
+                  disabled={googleLoading}
+                >
+                  <Image
+                    source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                    style={styles.googleIcon}
+                  />
+                  <ThemedText style={styles.addAccountOptionText}>
+                    {googleLoading ? 'Loading...' : 'Google'}
+                  </ThemedText>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
 
-        <Modal visible={addingAccount} transparent animationType="fade" onRequestClose={() => setAddingAccount(false)}>
-          <View style={styles.modalBackground}>
-            <View style={styles.modalContent}>
-              <ThemedText type="subtitle">Tambah Akun Baru</ThemedText>
-              <ThemedText type="default" themeColor="textSecondary">Masukin email dan password akun baru</ThemedText>
-              <View style={styles.inputGroup}>
+        <Modal visible={addingAccount} transparent animationType="fade" onRequestClose={() => {
+          setAddingAccount(false);
+          setNewAccountEmail('');
+          setNewAccountPassword('');
+        }}>
+          <KeyboardAvoidingView
+            style={styles.modalBackdrop}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <Pressable style={styles.backdropTouch} onPress={() => {
+              setAddingAccount(false);
+              setNewAccountEmail('');
+              setNewAccountPassword('');
+            }} />
+
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <MaterialCommunityIcons name="account-plus" size={24} color={Colors.black} />
+                <ThemedText style={styles.modalTitle}>Tambah Akun Baru</ThemedText>
+                <Pressable onPress={() => {
+                  setAddingAccount(false);
+                  setNewAccountEmail('');
+                  setNewAccountPassword('');
+                }} hitSlop={12}>
+                  <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
+                </Pressable>
+              </View>
+
+              <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
+                Masukin email dan password akun baru
+              </ThemedText>
+
+              <ThemedText style={styles.label}>Email</ThemedText>
+              <View style={styles.inputOuter}>
+                <View style={styles.inputShadow} pointerEvents="none" />
                 <NeoInput
                   placeholder="email..."
                   value={newAccountEmail}
                   onChangeText={setNewAccountEmail}
                   error={newAccountEmail.trim() ? undefined : 'Email harus diisi'}
                 />
+              </View>
+
+              <ThemedText style={styles.label}>Password</ThemedText>
+              <View style={styles.inputOuter}>
+                <View style={styles.inputShadow} pointerEvents="none" />
                 <NeoInput
                   placeholder="password..."
                   secureTextEntry
@@ -317,32 +439,43 @@ export default function GueScreen() {
                   error={newAccountPassword.trim() ? undefined : 'Password harus diisi'}
                 />
               </View>
-              <View style={styles.buttonGroup}>
-                <NeoButton
-                  title="Batal"
-                  variant="secondary"
-                  onPress={() => {
-                    setNewAccountEmail('');
-                    setNewAccountPassword('');
-                    setAddingAccount(false);
-                  }}
-                />
-                <NeoButton
-                  title="Simpan"
-                  variant="primary"
-                  onPress={handleAddAccount}
-                />
+
+              <View style={styles.modalActions}>
+                <View style={styles.cancelOuter}>
+                  <View style={styles.cancelShadow} pointerEvents="none" />
+                  <Pressable
+                    style={styles.cancelBtn}
+                    onPress={() => {
+                      setNewAccountEmail('');
+                      setNewAccountPassword('');
+                      setAddingAccount(false);
+                    }}
+                  >
+                    <ThemedText style={styles.cancelText}>Batal</ThemedText>
+                  </Pressable>
+                </View>
+
+                <View style={styles.confirmOuter}>
+                  <View style={styles.confirmShadow} pointerEvents="none" />
+                  <Pressable
+                    style={[styles.confirmBtn, (!newAccountEmail.trim() || !newAccountPassword.trim()) && styles.confirmBtnDisabled]}
+                    onPress={handleAddAccount}
+                    disabled={!newAccountEmail.trim() || !newAccountPassword.trim()}
+                  >
+                    <ThemedText style={styles.confirmText}>Simpan</ThemedText>
+                  </Pressable>
+                </View>
               </View>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </Modal>
-      </View>
 
-      <BugReportModal
-        visible={bugModalVisible}
-        onClose={() => setBugModalVisible(false)}
-        userEmail={user?.email}
-      />
+        <BugReportModal
+          visible={bugModalVisible}
+          onClose={() => setBugModalVisible(false)}
+          userEmail={user?.email}
+        />
+      </View>
     </PageLayout>
   );
 }
@@ -497,74 +630,220 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Modal styles
-  modalBackground: {
+  // Modal styles (matching BugReportModal)
+  modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  modalContent: {
-    width: '80%',
-    maxWidth: 350,
+  backdropTouch: {
+    position: 'absolute',
+    inset: 0,
+  },
+  modalCard: {
+    width: '88%',
+    maxWidth: 400,
     backgroundColor: Colors.white,
     borderWidth: 3,
     borderColor: Colors.black,
     borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
+    padding: Spacing.four,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
   },
   modalHeader: {
-    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 8,
+    marginBottom: Spacing.four,
   },
-  closeBtn: {
-    padding: 4,
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+    flex: 1,
   },
-  modalContentHeader: {
-    width: '100%',
-    marginBottom: 20,
+  modalSubtitle: {
+    fontSize: 14,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.three,
   },
   accountList: {
-    marginBottom: 16,
+    marginBottom: Spacing.two,
   },
   accountItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
-    padding: 12,
+    padding: Spacing.three,
     borderWidth: 2,
     borderColor: Colors.black,
     borderRadius: 12,
     backgroundColor: Colors.grayLight,
-    marginBottom: 8,
+    marginBottom: Spacing.two,
+  },
+  accountItemSelected: {
+    borderColor: Colors.primary,
+    backgroundColor: '#FFFDE7',
   },
   accountText: {
-    fontSize: 14,
-    fontFamily: Fonts.semiBold,
+    fontSize: 15,
+    fontFamily: Fonts.medium,
     color: Colors.black,
+    flex: 1,
   },
   modalDivider: {
     width: '100%',
     height: 2,
     backgroundColor: Colors.black,
-    marginVertical: 8,
+    marginVertical: Spacing.two,
   },
-  addAccountBtn: {
-    width: '100%',
-    marginTop: 8,
+  hintText: {
+    fontSize: 12,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.two,
   },
-  inputGroup: {
-    width: '100%',
-    marginBottom: 16,
+  label: {
+    fontSize: 13,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+    marginBottom: Spacing.two,
+    marginTop: Spacing.one,
   },
-  buttonGroup: {
+  inputOuter: {
+    position: 'relative',
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+    marginBottom: Spacing.two,
+  },
+  inputShadow: {
+    position: 'absolute',
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+    marginTop: Spacing.two,
+    marginBottom: Spacing.one,
+  },
+  sectionHint: {
+    fontSize: 13,
+    fontFamily: Fonts.medium,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.three,
+  },
+  addAccountOptions: {
     flexDirection: 'row',
-    width: '100%',
-    justifyContent: 'space-between',
-    marginTop: 16,
+    gap: Spacing.twoHalf,
+    marginTop: Spacing.one,
+  },
+  addAccountOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    borderWidth: 2,
+    borderRadius: 10,
+  },
+  addAccountOptionText: {
+    fontSize: 13,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+  },
+  googleIcon: {
+    width: 24,
+    height: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.twoHalf,
+    marginTop: Spacing.two,
+  },
+  cancelOuter: {
+    flex: 1,
+    position: 'relative',
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+  },
+  cancelShadow: {
+    position: 'absolute',
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  cancelBtn: {
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: 10,
+    paddingVertical: Spacing.twoHalf,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+  },
+  cancelText: {
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+  },
+  confirmOuter: {
+    flex: 1,
+    position: 'relative',
+    paddingRight: SHADOW_OFFSET,
+    paddingBottom: SHADOW_OFFSET,
+  },
+  confirmShadow: {
+    position: 'absolute',
+    top: SHADOW_OFFSET,
+    left: SHADOW_OFFSET,
+    right: 0,
+    bottom: 0,
+    borderRadius: 10,
+    backgroundColor: Colors.black,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  confirmBtn: {
+    borderWidth: 2,
+    borderColor: Colors.black,
+    borderRadius: 10,
+    paddingVertical: Spacing.twoHalf,
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+  },
+  confirmBtnDisabled: {
+    backgroundColor: Colors.gray,
+  },
+  confirmText: {
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    color: Colors.black,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginVertical: Spacing.four,
   },
 });

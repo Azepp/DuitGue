@@ -14,25 +14,21 @@ type AuthState = {
   initialize: () => Promise<void>;
 };
 
-export const useAuthStore = create<AuthState>((set) => {
-  const storedAccountsStr = mmkvStorage.getItem('accounts') ?? '[]';
-  const storedAccounts = JSON.parse(storedAccountsStr);
-  const storedPasswordsStr = mmkvStorage.getItem('passwords') ?? '{}';
-  const storedPasswords = JSON.parse(storedPasswordsStr);
-
-  return {
+export const useAuthStore = create<AuthState>((set, get) => ({
     session: null,
     isLoading: true,
-    accounts: storedAccounts,
+    accounts: [],
 
     setSession: (session) => set({ session, isLoading: false }),
 
     addAccount: async (email: string, password: string) => {
       try {
         const updatedAccounts = [...new Set([...get().accounts, email])];
+        const storedPasswordsStr = await mmkvStorage.getItem('passwords') ?? '{}';
+        const storedPasswords = JSON.parse(storedPasswordsStr);
         const updatedPasswords = { ...storedPasswords, [email]: password };
-        mmkvStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-        mmkvStorage.setItem('passwords', JSON.stringify(updatedPasswords));
+        await mmkvStorage.setItem('accounts', JSON.stringify(updatedAccounts));
+        await mmkvStorage.setItem('passwords', JSON.stringify(updatedPasswords));
         set({ accounts: updatedAccounts });
         return { success: true };
       } catch (err) {
@@ -43,9 +39,11 @@ export const useAuthStore = create<AuthState>((set) => {
     removeAccount: async (email: string) => {
       try {
         const updatedAccounts = get().accounts.filter((a) => a !== email);
+        const storedPasswordsStr = await mmkvStorage.getItem('passwords') ?? '{}';
+        const storedPasswords = JSON.parse(storedPasswordsStr);
         delete storedPasswords[email];
-        mmkvStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-        mmkvStorage.setItem('passwords', JSON.stringify(storedPasswords));
+        await mmkvStorage.setItem('accounts', JSON.stringify(updatedAccounts));
+        await mmkvStorage.setItem('passwords', JSON.stringify(storedPasswords));
         set({ accounts: updatedAccounts });
         if (get().session?.user?.email === email) {
           set({ session: null });
@@ -92,29 +90,46 @@ export const useAuthStore = create<AuthState>((set) => {
     },
 
     initialize: async () => {
-      const { data } = await supabase.auth.getSession();
+      let isMounted = true;
 
-      const storedAccounts = JSON.parse(mmkvStorage.getItem('accounts') ?? '[]');
-      const storedPasswords = JSON.parse(mmkvStorage.getItem('passwords') ?? '{}');
+      const doInitialize = async () => {
+        const { data } = await supabase.auth.getSession();
 
-      if (storedAccounts.length > 0 && data.session) {
-        const password = storedPasswords[storedAccounts[0]] || '';
-        const { data: loginData, error } = await supabase.auth.signInWithPassword({
-          email: storedAccounts[0],
-          password,
-        });
-        if (error) {
-          set({ session: data.session, accounts: storedAccounts, isLoading: false });
+        const storedAccountsStr = await mmkvStorage.getItem('accounts') ?? '[]';
+        const storedAccounts = JSON.parse(storedAccountsStr);
+        const storedPasswordsStr = await mmkvStorage.getItem('passwords') ?? '{}';
+        const storedPasswords = JSON.parse(storedPasswordsStr);
+
+        if (storedAccounts.length > 0 && data.session) {
+          const password = storedPasswords[storedAccounts[0]] || '';
+          const { data: loginData, error } = await supabase.auth.signInWithPassword({
+            email: storedAccounts[0],
+            password,
+          });
+          if (error) {
+            if (isMounted) set({ session: data.session, accounts: storedAccounts, isLoading: false });
+          } else {
+            if (isMounted) set({ session: loginData.session, accounts: storedAccounts, isLoading: false });
+          }
         } else {
-          set({ session: loginData.session, accounts: storedAccounts, isLoading: false });
+          if (isMounted) set({ session: data.session, accounts: storedAccounts, isLoading: false });
         }
-      } else {
-        set({ session: data.session, accounts: storedAccounts, isLoading: false });
-      }
 
-      supabase.auth.onAuthStateChange((_event, session) => {
-        set({ session });
-      });
+        supabase.auth.onAuthStateChange((_event, session) => {
+          if (isMounted) set({ session });
+        });
+      };
+
+      try {
+        const timeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth init timeout')), 10000)
+        );
+        await Promise.race([doInitialize(), timeout]);
+      } catch {
+        const storedAccountsStr = await mmkvStorage.getItem('accounts') ?? '[]';
+        const storedAccounts = JSON.parse(storedAccountsStr);
+        if (isMounted) set({ session: null, accounts: storedAccounts, isLoading: false });
+      }
     },
-  };
-});
+  })
+);

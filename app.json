@@ -32,8 +32,8 @@
     "updates": {
       "url": "https://u.expo.dev/9ebea1ef-355a-4c68-9516-d4d2e7757e34",
       "fallbackToCacheTimeout": 0,
-      "enabled": false,
-      "checkAutomatically": "ON_ERROR_RECOVERY"
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
     },
     "runtimeVersion": {
       "policy": "sdkVersion"
@@ -54,16 +54,16 @@
       "@react-native-google-signin/google-signin",
       "expo-updates",
       "expo-image",
-      [
+[
         "expo-build-properties",
         {
           "android": {
-            "enableProguardInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableProguardInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false,
             "abiFilters": ["arm64-v8a"],
              "navigationBar": {
-              "enforceContrast": true
-            }
+               "enforceContrast": true
+             }
           }
         }
       ],

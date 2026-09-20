@@ -2,6 +2,7 @@ import { OTAUpdateBanner } from "@/components/ui/ota-update-banner";
 import { OTAUpdateModal } from "@/components/ui/ota-update-modal";
 import { ToastProvider } from "@/components/ui/toast";
 import { UpdateModal } from "@/components/ui/update-modal";
+import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useOTAUpdate } from "@/hooks/use-ota-update";
 import { queryClient } from "@/lib/query-client";
 import { checkForUpdate, type UpdateInfo } from "@/lib/update-checker";
@@ -26,6 +27,7 @@ export default function RootLayout() {
     SpaceGrotesk_600SemiBold,
     SpaceGrotesk_700Bold,
   });
+  const [fontTimeout, setFontTimeout] = useState(false);
 
   const initialize = useAuthStore((s) => s.initialize);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -34,6 +36,11 @@ export default function RootLayout() {
   const [otaDismissed, setOtaDismissed] = useState(false);
 
   const showOtaModal = isUpdatePending && !isDownloading && !otaDismissed;
+
+  useEffect(() => {
+    const timer = setTimeout(() => setFontTimeout(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     initialize();
@@ -47,10 +54,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if ((loaded || error) && !isLoading) {
+    if ((loaded || error || fontTimeout) && !isLoading) {
       SplashScreen.hideAsync();
     }
-  }, [loaded, error, isLoading]);
+  }, [loaded, error, fontTimeout, isLoading]);
 
   useEffect(() => {
     const currentVersion = Constants.expoConfig?.version || "1.0.0";
@@ -59,25 +66,27 @@ export default function RootLayout() {
     });
   }, []);
 
-  if ((!loaded && !error) || isLoading) {
+  if ((!loaded && !error && !fontTimeout) || isLoading) {
     return null;
   }
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={DefaultTheme}>
-        <ToastProvider>
-          <OTAUpdateBanner visible={isUpdatePending} isDownloading={isDownloading} onApply={applyUpdate} />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="logout" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(app)" />
-          </Stack>
-        </ToastProvider>
-        <UpdateModal visible={!!updateInfo} latestVersion={updateInfo?.latestVersion ?? ""} downloadUrl={updateInfo?.downloadUrl ?? ""} releaseNotes={updateInfo?.releaseNotes ?? ""} isForceUpdate={updateInfo?.isForceUpdate ?? false} onClose={() => setUpdateInfo(null)} />
-        <OTAUpdateModal visible={showOtaModal} isDownloading={isDownloading} onApply={applyUpdate} onClose={() => setOtaDismissed(true)} />
-      </ThemeProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider value={DefaultTheme}>
+          <ToastProvider>
+            <OTAUpdateBanner visible={isUpdatePending} isDownloading={isDownloading} onApply={applyUpdate} />
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="logout" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(app)" />
+            </Stack>
+          </ToastProvider>
+          <UpdateModal visible={!!updateInfo} latestVersion={updateInfo?.latestVersion ?? ""} downloadUrl={updateInfo?.downloadUrl ?? ""} releaseNotes={updateInfo?.releaseNotes ?? ""} isForceUpdate={updateInfo?.isForceUpdate ?? false} onClose={() => setUpdateInfo(null)} />
+          <OTAUpdateModal visible={showOtaModal} isDownloading={isDownloading} onApply={applyUpdate} onClose={() => setOtaDismissed(true)} />
+        </ThemeProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }

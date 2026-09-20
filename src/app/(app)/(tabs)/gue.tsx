@@ -154,11 +154,12 @@ export default function GueScreen() {
     try {
       const { data, error } = await signInWithGoogle();
       if (error) throw error;
-      if (data?.session && data?.user?.email) {
-        await addAccount(data.user.email, '');
-        showToast('Akun Google ditambahkan', 'success');
-        closeAccountModal();
+      if (!data?.session || !data?.user?.email) {
+        return;
       }
+      await addAccount(data.user.email, '');
+      showToast('Akun Google ditambahkan', 'success');
+      closeAccountModal();
     } catch (err: any) {
       if (err?.code !== 'SIGN_IN_CANCELLED') {
         showToast(err?.message || 'Gagal login Google', 'error');

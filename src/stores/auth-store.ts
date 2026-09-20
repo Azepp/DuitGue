@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { mmkvStorage } from '@/lib/mmkv';
 
+let isSwitchingAccount = false;
+
 type AuthState = {
   session: Session | null;
   isLoading: boolean;
@@ -67,6 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         const currentSession = get().session;
 
+        isSwitchingAccount = true;
         set({ isLoading: true });
         try {
           await supabase.auth.signOut();
@@ -81,6 +84,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           if (session) {
             await get().addAccount(email, password);
             set({ session, isLoading: false });
+            isSwitchingAccount = false;
             return { success: true };
           } else {
             throw new Error('Gagal mendapatkan session');
@@ -92,9 +96,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } else {
             set({ isLoading: false });
           }
+          isSwitchingAccount = false;
           return { success: false, error: authErr.message || 'Gagal switch akun' };
         }
       } catch (err) {
+        isSwitchingAccount = false;
         return { success: false, error: 'Error tak terduga' };
       }
     },
@@ -126,7 +132,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         supabase.auth.onAuthStateChange((_event, session) => {
-          if (isMounted) set({ session });
+          if (isMounted && !isSwitchingAccount) set({ session });
         });
       };
 

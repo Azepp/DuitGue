@@ -5,6 +5,7 @@ const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || "";
 
 GoogleSignin.configure({
   webClientId,
+  forceCodeForRefreshToken: true,
 });
 
 async function ensureProfile(userId: string, userMetadata: Record<string, any> | undefined) {
@@ -20,6 +21,17 @@ async function ensureProfile(userId: string, userMetadata: Record<string, any> |
 export async function signInWithGoogle() {
   try {
     await GoogleSignin.hasPlayServices();
+    
+    // Force account picker by signing out first if there's an active Google session
+    try {
+      const isSignedIn = await GoogleSignin.isSignedIn();
+      if (isSignedIn) {
+        await GoogleSignin.signOut();
+      }
+    } catch {
+      // ignore
+    }
+    
     const user = await GoogleSignin.signIn();
 
     const { idToken } = user;

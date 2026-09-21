@@ -53,6 +53,8 @@ export default function GueScreen() {
   const [newAccountEmail, setNewAccountEmail] = useState('');
   const [newAccountPassword, setNewAccountPassword] = useState('');
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
 
   const handleExport = async () => {
     if (exporting) return;
@@ -120,6 +122,8 @@ export default function GueScreen() {
 
   const closeAccountModal = () => {
     setModalVisible(false);
+    setEmailTouched(false);
+    setPasswordTouched(false);
   };
 
   const handleSwitchAccount = async (targetEmail: string) => {
@@ -142,6 +146,8 @@ export default function GueScreen() {
       closeAccountModal();
       setNewAccountEmail('');
       setNewAccountPassword('');
+      setEmailTouched(false);
+      setPasswordTouched(false);
     } catch (err: any) {
       showToast(err?.message || 'Gagal menambah akun', 'error');
     } finally {
@@ -349,6 +355,8 @@ export default function GueScreen() {
           setAddingAccount(false);
           setNewAccountEmail('');
           setNewAccountPassword('');
+          setEmailTouched(false);
+          setPasswordTouched(false);
         }}>
           <KeyboardAvoidingView
             style={styles.modalBackdrop}
@@ -358,6 +366,8 @@ export default function GueScreen() {
               setAddingAccount(false);
               setNewAccountEmail('');
               setNewAccountPassword('');
+              setEmailTouched(false);
+              setPasswordTouched(false);
             }} />
 
             <View style={styles.modalCard}>
@@ -368,14 +378,12 @@ export default function GueScreen() {
                   setAddingAccount(false);
                   setNewAccountEmail('');
                   setNewAccountPassword('');
+                  setEmailTouched(false);
+                  setPasswordTouched(false);
                 }} hitSlop={12}>
                   <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
                 </Pressable>
               </View>
-
-              <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
-                Masukin email dan password akun baru
-              </ThemedText>
 
               <ThemedText style={styles.label}>Email</ThemedText>
               <View style={styles.inputOuter}>
@@ -384,7 +392,8 @@ export default function GueScreen() {
                   placeholder="email..."
                   value={newAccountEmail}
                   onChangeText={setNewAccountEmail}
-                  error={newAccountEmail.trim() ? undefined : 'Email harus diisi'}
+                  onBlur={() => setEmailTouched(true)}
+                  error={emailTouched && !newAccountEmail.trim() ? 'Email harus diisi' : undefined}
                 />
               </View>
 
@@ -396,7 +405,8 @@ export default function GueScreen() {
                   secureTextEntry
                   value={newAccountPassword}
                   onChangeText={setNewAccountPassword}
-                  error={newAccountPassword.trim() ? undefined : 'Password harus diisi'}
+                  onBlur={() => setPasswordTouched(true)}
+                  error={passwordTouched && !newAccountPassword.trim() ? 'Password harus diisi' : undefined}
                 />
               </View>
 
@@ -409,6 +419,8 @@ export default function GueScreen() {
                       setNewAccountEmail('');
                       setNewAccountPassword('');
                       setAddingAccount(false);
+                      setEmailTouched(false);
+                      setPasswordTouched(false);
                     }}
                   >
                     <ThemedText style={styles.cancelText}>Batal</ThemedText>

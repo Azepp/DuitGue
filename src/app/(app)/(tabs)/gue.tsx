@@ -205,9 +205,6 @@ export default function GueScreen() {
             {currentEmail === accountEmail && (
               <MaterialCommunityIcons name="check-circle" size={22} color={Colors.success} />
             )}
-            {currentEmail !== accountEmail && (
-              <MaterialCommunityIcons name="swap-horizontal" size={22} color={Colors.primary} />
-            )}
           </Pressable>
         ))}
       </View>
@@ -311,25 +308,8 @@ export default function GueScreen() {
                 <View style={styles.modalDivider} />
               )}
 
-              <View style={styles.divider} />
-
               <ThemedText style={styles.sectionTitle}>Tambah Akun Baru</ThemedText>
               <View style={styles.addAccountOptions}>
-                <Pressable
-                  style={[
-                    styles.addAccountOption,
-                    { backgroundColor: Colors.white, borderColor: Colors.black },
-                  ]}
-                  onPress={() => {
-                    setNewAccountEmail('');
-                    setNewAccountPassword('');
-                    setAddingAccount(true);
-                  }}
-                >
-                  <MaterialCommunityIcons name="email-outline" size={24} color={Colors.black} />
-                  <ThemedText style={styles.addAccountOptionText}>Email</ThemedText>
-                </Pressable>
-
                 <Pressable
                   style={[
                     styles.addAccountOption,

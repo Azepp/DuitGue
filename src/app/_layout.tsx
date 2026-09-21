@@ -6,7 +6,7 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { useOTAUpdate } from "@/hooks/use-ota-update";
 import { queryClient } from "@/lib/query-client";
 import { checkForUpdate, type UpdateInfo } from "@/lib/update-checker";
-import { useAuthStore } from "@/stores/auth-store";
+import { useAuthStore, setAuthChangeCallback } from "@/stores/auth-store";
 import { initOnlineManager } from "@/lib/offline";
 import { SpaceGrotesk_300Light, SpaceGrotesk_400Regular, SpaceGrotesk_500Medium, SpaceGrotesk_600SemiBold, SpaceGrotesk_700Bold, useFonts } from "@expo-google-fonts/space-grotesk";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -45,7 +45,7 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
     initOnlineManager();
-  }, []);
+  }, [initialize]);
 
   useEffect(() => {
     if (Platform.OS === "android") {
@@ -64,6 +64,14 @@ export default function RootLayout() {
     checkForUpdate(currentVersion).then((info) => {
       if (info?.hasUpdate) setUpdateInfo(info);
     });
+  }, []);
+
+  useEffect(() => {
+    setAuthChangeCallback(() => {
+      queryClient.invalidateQueries();
+    });
+    
+    return () => setAuthChangeCallback(null);
   }, []);
 
   if ((!loaded && !error && !fontTimeout) || isLoading) {

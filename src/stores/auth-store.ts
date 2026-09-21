@@ -5,6 +5,11 @@ import { mmkvStorage } from '@/lib/mmkv';
 import { signInWithGoogle } from '@/lib/google-signin';
 
 let isSwitchingAccount = false;
+let onAuthChangeCallback: (() => void) | null = null;
+
+export const setAuthChangeCallback = (callback: (() => void) | null) => {
+  onAuthChangeCallback = callback;
+};
 
 type AuthState = {
   session: Session | null;
@@ -95,6 +100,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             await get().addAccount(email, password);
             set({ session, isLoading: false });
             isSwitchingAccount = false;
+            if (onAuthChangeCallback) onAuthChangeCallback();
             return { success: true };
           } else {
             throw new Error('Gagal mendapatkan session');
@@ -142,7 +148,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
 
         supabase.auth.onAuthStateChange((_event, session) => {
-          if (isMounted && !isSwitchingAccount) set({ session });
+          if (isMounted && !isSwitchingAccount) {
+            set({ session });
+            if (onAuthChangeCallback) onAuthChangeCallback();
+          }
         });
       };
 

@@ -22,10 +22,11 @@ export async function signInWithGoogle() {
   try {
     await GoogleSignin.hasPlayServices();
     
-    // Force account picker by signing out first if there's an active Google session
+    // Force account picker by signing out and revoking access first
     try {
       const isSignedIn = await GoogleSignin.isSignedIn();
       if (isSignedIn) {
+        await GoogleSignin.revokeAccess();
         await GoogleSignin.signOut();
       }
     } catch {

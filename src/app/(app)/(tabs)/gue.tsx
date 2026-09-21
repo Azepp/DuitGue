@@ -305,12 +305,6 @@ export default function GueScreen() {
                 <View style={styles.modalDivider} />
               )}
 
-              {accounts.length > 0 && (
-                <ThemedText type="small" themeColor="textSecondary" style={styles.hintText}>
-                  Tekan akun untuk switch
-                </ThemedText>
-              )}
-
               <View style={styles.divider} />
 
               <ThemedText style={styles.sectionTitle}>Tambah Akun Baru</ThemedText>

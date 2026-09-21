@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import type { Session } from '@supabase/supabase-js';
 import { mmkvStorage } from '@/lib/mmkv';
+import { signInWithGoogle } from '@/lib/google-signin';
 
 let isSwitchingAccount = false;
 
@@ -33,7 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await mmkvStorage.setItem('passwords', JSON.stringify(updatedPasswords));
         set({ accounts: updatedAccounts });
         return { success: true };
-      } catch (err) {
+      } catch {
         return { success: false, error: 'Gagal menyimpan akun' };
       }
     },
@@ -51,7 +52,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           set({ session: null });
         }
         return { success: true };
-      } catch (err) {
+      } catch {
         return { success: false, error: 'Gagal menghapus akun' };
       }
     },
@@ -74,13 +75,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
           await supabase.auth.signOut();
 
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
-          if (error) throw error;
+          let session = null;
+          
+          // If password is empty, it's a Google account - use Google sign-in
+          if (!password) {
+            const { data, error } = await signInWithGoogle();
+            if (error) throw error;
+            session = data?.session ?? null;
+          } else {
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email,
+              password,
+            });
+            if (error) throw error;
+            session = data.session ?? null;
+          }
 
-          const session = data.session ?? null;
           if (session) {
             await get().addAccount(email, password);
             set({ session, isLoading: false });
@@ -99,7 +109,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           isSwitchingAccount = false;
           return { success: false, error: authErr.message || 'Gagal switch akun' };
         }
-      } catch (err) {
+      } catch {
         isSwitchingAccount = false;
         return { success: false, error: 'Error tak terduga' };
       }

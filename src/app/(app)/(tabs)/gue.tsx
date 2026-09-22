@@ -183,9 +183,6 @@ export default function GueScreen() {
       return (
         <>
           <ThemedText style={styles.modalTitle}>Ganti Akun</ThemedText>
-          <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
-            Pilih cara login
-          </ThemedText>
 
           <View style={styles.switchOptions}>
             <Pressable
@@ -198,7 +195,7 @@ export default function GueScreen() {
 
             <Pressable
               style={styles.switchOption}
-              onPress={() => setSwitchMethod('google')}
+              onPress={handleSwitchWithGoogle}
               disabled={googleLoading}
             >
               <Image
@@ -268,37 +265,6 @@ export default function GueScreen() {
         </>
       );
     }
-
-    return (
-      <>
-        <ThemedText style={styles.modalTitle}>Login Google</ThemedText>
-        <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
-          Pilih akun Google untuk login
-        </ThemedText>
-
-        <View style={styles.modalActions}>
-          <View style={styles.cancelOuter}>
-            <View style={styles.cancelShadow} pointerEvents="none" />
-            <Pressable style={styles.cancelBtn} onPress={() => setSwitchMethod(null)}>
-              <ThemedText style={styles.cancelText}>Batal</ThemedText>
-            </Pressable>
-          </View>
-
-          <View style={styles.confirmOuter}>
-            <View style={styles.confirmShadow} pointerEvents="none" />
-            <Pressable
-              style={[styles.confirmBtn, googleLoading && styles.confirmBtnDisabled]}
-              onPress={handleSwitchWithGoogle}
-              disabled={googleLoading}
-            >
-              <ThemedText style={styles.confirmText}>
-                {googleLoading ? 'Loading...' : 'Lanjut ke Google'}
-              </ThemedText>
-            </Pressable>
-          </View>
-        </View>
-      </>
-    );
   };
 
   return (

@@ -25,9 +25,6 @@ export default function GueScreen() {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const userId = user?.id;
-  const accounts = useAuthStore((s) => s.accounts);
-  const addAccount = useAuthStore((s) => s.addAccount);
-  const switchAccount = useAuthStore((s) => s.switchAccount);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', userId],
@@ -46,15 +43,16 @@ export default function GueScreen() {
     profile?.display_name || user?.user_metadata?.display_name || user?.email?.split('@')[0] || 'UserDuit';
   const email = user?.email || '';
 
-  const [modalVisible, setModalVisible] = useState(false);
+  const [switchModalVisible, setSwitchModalVisible] = useState(false);
+  const [switchMethod, setSwitchMethod] = useState<'email' | 'google' | null>(null);
   const [bugModalVisible, setBugModalVisible] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [addingAccount, setAddingAccount] = useState(false);
-  const [newAccountEmail, setNewAccountEmail] = useState('');
-  const [newAccountPassword, setNewAccountPassword] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
   const [passwordTouched, setPasswordTouched] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const handleExport = async () => {
     if (exporting) return;
@@ -116,46 +114,52 @@ export default function GueScreen() {
     router.replace('/login');
   };
 
-  const openAccountModal = () => {
-    setModalVisible(true);
-  };
-
-  const closeAccountModal = () => {
-    setModalVisible(false);
+  const openSwitchModal = () => {
+    setSwitchModalVisible(true);
+    setSwitchMethod(null);
+    setLoginEmail('');
+    setLoginPassword('');
     setEmailTouched(false);
     setPasswordTouched(false);
   };
 
-  const handleSwitchAccount = async (targetEmail: string) => {
-    closeAccountModal();
-    const result = await switchAccount(targetEmail);
-    if (!result.success) {
-      showToast(result.error || 'Gagal switch akun', 'error');
-    }
+  const closeSwitchModal = () => {
+    setSwitchModalVisible(false);
+    setSwitchMethod(null);
+    setLoginEmail('');
+    setLoginPassword('');
+    setEmailTouched(false);
+    setPasswordTouched(false);
+    setGoogleLoading(false);
+    setLoginLoading(false);
   };
 
-  const handleAddAccount = async () => {
-    if (!newAccountEmail.trim() || !newAccountPassword.trim()) {
+  const handleSwitchWithEmail = async () => {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
       showToast('Isi email dan password', 'error');
       return;
     }
-    setAddingAccount(true);
+    setLoginLoading(true);
     try {
-      await addAccount(newAccountEmail.trim(), newAccountPassword.trim());
-      showToast('Akun baru ditambahkan', 'success');
-      closeAccountModal();
-      setNewAccountEmail('');
-      setNewAccountPassword('');
-      setEmailTouched(false);
-      setPasswordTouched(false);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+      });
+      if (error) throw error;
+      if (data.session) {
+        showToast('Berhasil ganti akun', 'success');
+        closeSwitchModal();
+      } else {
+        showToast('Gagal mendapatkan session', 'error');
+      }
     } catch (err: any) {
-      showToast(err?.message || 'Gagal menambah akun', 'error');
+      showToast(err?.message || 'Gagal login', 'error');
     } finally {
-      setAddingAccount(false);
+      setLoginLoading(false);
     }
   };
 
-  const handleAddAccountGoogle = async () => {
+  const handleSwitchWithGoogle = async () => {
     setGoogleLoading(true);
     try {
       const { data, error } = await signInWithGoogle();
@@ -163,9 +167,8 @@ export default function GueScreen() {
       if (!data?.session || !data?.user?.email) {
         return;
       }
-      await addAccount(data.user.email, '');
-      showToast('Akun Google ditambahkan', 'success');
-      closeAccountModal();
+      showToast('Berhasil ganti akun', 'success');
+      closeSwitchModal();
     } catch (err: any) {
       if (err?.code !== 'SIGN_IN_CANCELLED') {
         showToast(err?.message || 'Gagal login Google', 'error');
@@ -175,39 +178,126 @@ export default function GueScreen() {
     }
   };
 
-  const renderAccountItems = () => {
-    if (accounts.length === 0) {
+  const renderSwitchContent = () => {
+    if (!switchMethod) {
       return (
-        <ThemedText type="default" themeColor="textSecondary" style={styles.emptyText}>
-          Belum ada akun yang tersimpan
-        </ThemedText>
+        <>
+          <ThemedText style={styles.modalTitle}>Ganti Akun</ThemedText>
+          <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
+            Pilih cara login
+          </ThemedText>
+
+          <View style={styles.switchOptions}>
+            <Pressable
+              style={styles.switchOption}
+              onPress={() => setSwitchMethod('email')}
+            >
+              <MaterialCommunityIcons name="email-outline" size={28} color={Colors.black} />
+              <ThemedText style={styles.switchOptionText}>Email</ThemedText>
+            </Pressable>
+
+            <Pressable
+              style={styles.switchOption}
+              onPress={() => setSwitchMethod('google')}
+              disabled={googleLoading}
+            >
+              <Image
+                source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
+                style={styles.googleIcon}
+              />
+              <ThemedText style={styles.switchOptionText}>
+                {googleLoading ? 'Loading...' : 'Google'}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </>
       );
     }
-    const currentEmail = user?.email;
+
+    if (switchMethod === 'email') {
+      return (
+        <>
+          <ThemedText style={styles.modalTitle}>Login Email</ThemedText>
+
+          <ThemedText style={styles.label}>Email</ThemedText>
+          <View style={styles.inputOuter}>
+            <View style={styles.inputShadow} pointerEvents="none" />
+            <NeoInput
+              placeholder="email..."
+              value={loginEmail}
+              onChangeText={setLoginEmail}
+              onBlur={() => setEmailTouched(true)}
+              error={emailTouched && !loginEmail.trim() ? 'Email harus diisi' : undefined}
+            />
+          </View>
+
+          <ThemedText style={styles.label}>Password</ThemedText>
+          <View style={styles.inputOuter}>
+            <View style={styles.inputShadow} pointerEvents="none" />
+            <NeoInput
+              placeholder="password..."
+              secureTextEntry
+              value={loginPassword}
+              onChangeText={setLoginPassword}
+              onBlur={() => setPasswordTouched(true)}
+              error={passwordTouched && !loginPassword.trim() ? 'Password harus diisi' : undefined}
+            />
+          </View>
+
+          <View style={styles.modalActions}>
+            <View style={styles.cancelOuter}>
+              <View style={styles.cancelShadow} pointerEvents="none" />
+              <Pressable style={styles.cancelBtn} onPress={() => setSwitchMethod(null)}>
+                <ThemedText style={styles.cancelText}>Kembali</ThemedText>
+              </Pressable>
+            </View>
+
+            <View style={styles.confirmOuter}>
+              <View style={styles.confirmShadow} pointerEvents="none" />
+              <Pressable
+                style={[styles.confirmBtn, (!loginEmail.trim() || !loginPassword.trim()) && styles.confirmBtnDisabled]}
+                onPress={handleSwitchWithEmail}
+                disabled={!loginEmail.trim() || !loginPassword.trim() || loginLoading}
+              >
+                <ThemedText style={styles.confirmText}>
+                  {loginLoading ? 'Tunggu...' : 'Login'}
+                </ThemedText>
+              </Pressable>
+            </View>
+          </View>
+        </>
+      );
+    }
+
     return (
-      <View style={styles.accountList}>
-        {accounts.map((accountEmail, index) => (
-          <Pressable
-            key={accountEmail}
-            style={[
-              styles.accountItem,
-              currentEmail === accountEmail && styles.accountItemActive,
-            ]}
-            onPress={() => {
-              if (accountEmail !== currentEmail) {
-                handleSwitchAccount(accountEmail);
-              }
-            }}
-            disabled={accountEmail === currentEmail}
-          >
-            <MaterialCommunityIcons name="account-outline" size={20} color={Colors.black} />
-            <ThemedText style={styles.accountText}>{accountEmail}</ThemedText>
-            {currentEmail === accountEmail && (
-              <MaterialCommunityIcons name="check-circle" size={22} color={Colors.success} />
-            )}
-          </Pressable>
-        ))}
-      </View>
+      <>
+        <ThemedText style={styles.modalTitle}>Login Google</ThemedText>
+        <ThemedText type="default" themeColor="textSecondary" style={styles.modalSubtitle}>
+          Pilih akun Google untuk login
+        </ThemedText>
+
+        <View style={styles.modalActions}>
+          <View style={styles.cancelOuter}>
+            <View style={styles.cancelShadow} pointerEvents="none" />
+            <Pressable style={styles.cancelBtn} onPress={() => setSwitchMethod(null)}>
+              <ThemedText style={styles.cancelText}>Batal</ThemedText>
+            </Pressable>
+          </View>
+
+          <View style={styles.confirmOuter}>
+            <View style={styles.confirmShadow} pointerEvents="none" />
+            <Pressable
+              style={[styles.confirmBtn, googleLoading && styles.confirmBtnDisabled]}
+              onPress={handleSwitchWithGoogle}
+              disabled={googleLoading}
+            >
+              <ThemedText style={styles.confirmText}>
+                {googleLoading ? 'Loading...' : 'Lanjut ke Google'}
+              </ThemedText>
+            </Pressable>
+          </View>
+        </View>
+      </>
     );
   };
 
@@ -266,7 +356,7 @@ export default function GueScreen() {
 
           <View style={styles.menuOuter}>
             <View style={styles.menuShadow} pointerEvents="none" />
-            <Pressable style={styles.menuItem} onPress={openAccountModal}>
+            <Pressable style={styles.menuItem} onPress={openSwitchModal}>
               <MaterialCommunityIcons name="account-switch" size={22} color={Colors.black} />
               <ThemedText style={styles.menuText}>Ganti Akun</ThemedText>
             </Pressable>
@@ -274,150 +364,29 @@ export default function GueScreen() {
 
           <View style={styles.logoutOuter}>
             <View style={styles.logoutShadow} pointerEvents="none" />
-            <Pressable
-              style={styles.logoutBtn}
-              onPress={handleLogout}
-            >
+            <Pressable style={styles.logoutBtn} onPress={handleLogout}>
               <MaterialCommunityIcons name="logout" size={20} color={Colors.white} />
-              <ThemedText style={styles.logoutText}>
-                Keluar
-              </ThemedText>
+              <ThemedText style={styles.logoutText}>Keluar</ThemedText>
             </Pressable>
           </View>
         </View>
 
-        <Modal visible={modalVisible} transparent animationType="fade" onRequestClose={closeAccountModal}>
+        <Modal visible={switchModalVisible} transparent animationType="fade" onRequestClose={closeSwitchModal}>
           <KeyboardAvoidingView
             style={styles.modalBackdrop}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
-            <Pressable style={styles.backdropTouch} onPress={closeAccountModal} />
+            <Pressable style={styles.backdropTouch} onPress={closeSwitchModal} />
 
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
-                <MaterialCommunityIcons name="account-multiple" size={24} color={Colors.black} />
-                <ThemedText style={styles.modalTitle}>Pilih Akun</ThemedText>
-                <Pressable onPress={closeAccountModal} hitSlop={12}>
+                <MaterialCommunityIcons name="account-switch" size={24} color={Colors.black} />
+                <Pressable onPress={closeSwitchModal} hitSlop={12}>
                   <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
                 </Pressable>
               </View>
 
-              {renderAccountItems()}
-
-              {accounts.length > 0 && (
-                <View style={styles.modalDivider} />
-              )}
-
-              <ThemedText style={styles.sectionTitle}>Tambah Akun Baru</ThemedText>
-              <View style={styles.addAccountOptions}>
-                <Pressable
-                  style={[
-                    styles.addAccountOption,
-                    { backgroundColor: Colors.white, borderColor: Colors.black },
-                  ]}
-                  onPress={handleAddAccountGoogle}
-                  disabled={googleLoading}
-                >
-                  <Image
-                    source={{ uri: 'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg' }}
-                    style={styles.googleIcon}
-                  />
-                  <ThemedText style={styles.addAccountOptionText}>
-                    {googleLoading ? 'Loading...' : 'Google'}
-                  </ThemedText>
-                </Pressable>
-              </View>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
-
-        <Modal visible={addingAccount} transparent animationType="fade" onRequestClose={() => {
-          setAddingAccount(false);
-          setNewAccountEmail('');
-          setNewAccountPassword('');
-          setEmailTouched(false);
-          setPasswordTouched(false);
-        }}>
-          <KeyboardAvoidingView
-            style={styles.modalBackdrop}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
-            <Pressable style={styles.backdropTouch} onPress={() => {
-              setAddingAccount(false);
-              setNewAccountEmail('');
-              setNewAccountPassword('');
-              setEmailTouched(false);
-              setPasswordTouched(false);
-            }} />
-
-            <View style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <MaterialCommunityIcons name="account-plus" size={24} color={Colors.black} />
-                <ThemedText style={styles.modalTitle}>Tambah Akun Baru</ThemedText>
-                <Pressable onPress={() => {
-                  setAddingAccount(false);
-                  setNewAccountEmail('');
-                  setNewAccountPassword('');
-                  setEmailTouched(false);
-                  setPasswordTouched(false);
-                }} hitSlop={12}>
-                  <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
-                </Pressable>
-              </View>
-
-              <ThemedText style={styles.label}>Email</ThemedText>
-              <View style={styles.inputOuter}>
-                <View style={styles.inputShadow} pointerEvents="none" />
-                <NeoInput
-                  placeholder="email..."
-                  value={newAccountEmail}
-                  onChangeText={setNewAccountEmail}
-                  onBlur={() => setEmailTouched(true)}
-                  error={emailTouched && !newAccountEmail.trim() ? 'Email harus diisi' : undefined}
-                />
-              </View>
-
-              <ThemedText style={styles.label}>Password</ThemedText>
-              <View style={styles.inputOuter}>
-                <View style={styles.inputShadow} pointerEvents="none" />
-                <NeoInput
-                  placeholder="password..."
-                  secureTextEntry
-                  value={newAccountPassword}
-                  onChangeText={setNewAccountPassword}
-                  onBlur={() => setPasswordTouched(true)}
-                  error={passwordTouched && !newAccountPassword.trim() ? 'Password harus diisi' : undefined}
-                />
-              </View>
-
-              <View style={styles.modalActions}>
-                <View style={styles.cancelOuter}>
-                  <View style={styles.cancelShadow} pointerEvents="none" />
-                  <Pressable
-                    style={styles.cancelBtn}
-                    onPress={() => {
-                      setNewAccountEmail('');
-                      setNewAccountPassword('');
-                      setAddingAccount(false);
-                      setEmailTouched(false);
-                      setPasswordTouched(false);
-                    }}
-                  >
-                    <ThemedText style={styles.cancelText}>Batal</ThemedText>
-                  </Pressable>
-                </View>
-
-                <View style={styles.confirmOuter}>
-                  <View style={styles.confirmShadow} pointerEvents="none" />
-                  <Pressable
-                    style={[styles.confirmBtn, (!newAccountEmail.trim() || !newAccountPassword.trim()) && styles.confirmBtnDisabled]}
-                    onPress={handleAddAccount}
-                    disabled={!newAccountEmail.trim() || !newAccountPassword.trim()}
-                  >
-                    <ThemedText style={styles.confirmText}>Simpan</ThemedText>
-                  </Pressable>
-                </View>
-              </View>
+              {renderSwitchContent()}
             </View>
           </KeyboardAvoidingView>
         </Modal>
@@ -578,11 +547,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     color: Colors.white,
   },
-  spacer: {
-    flex: 1,
-  },
 
-  // Modal styles (matching BugReportModal)
   modalBackdrop: {
     flex: 1,
     justifyContent: 'center',
@@ -610,7 +575,7 @@ const styles = StyleSheet.create({
   modalHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
     marginBottom: Spacing.four,
   },
   modalTitle: {
@@ -618,6 +583,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.bold,
     color: Colors.black,
     flex: 1,
+    textAlign: 'center',
   },
   modalSubtitle: {
     fontSize: 14,
@@ -626,47 +592,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: Spacing.three,
   },
-  accountList: {
-    marginBottom: Spacing.two,
+  switchOptions: {
+    flexDirection: 'row',
+    gap: Spacing.twoHalf,
+    marginTop: Spacing.one,
   },
-  accountItem: {
+  switchOption: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    padding: Spacing.three,
+    justifyContent: 'center',
+    gap: Spacing.two,
+    paddingVertical: Spacing.three,
     borderWidth: 2,
     borderColor: Colors.black,
-    borderRadius: 12,
-    backgroundColor: Colors.grayLight,
-    marginBottom: Spacing.two,
+    borderRadius: 10,
+    backgroundColor: Colors.white,
   },
-  accountItemActive: {
-    borderColor: Colors.success,
-    backgroundColor: '#E8F5E9',
-  },
-  accountItemSelected: {
-    borderColor: Colors.primary,
-    backgroundColor: '#FFFDE7',
-  },
-  accountText: {
-    fontSize: 15,
-    fontFamily: Fonts.medium,
+  switchOptionText: {
+    fontSize: 13,
+    fontFamily: Fonts.bold,
     color: Colors.black,
-    flex: 1,
   },
-  modalDivider: {
-    width: '100%',
-    height: 2,
-    backgroundColor: Colors.black,
-    marginVertical: Spacing.two,
-  },
-  hintText: {
-    fontSize: 12,
-    fontFamily: Fonts.medium,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.two,
+  googleIcon: {
+    width: 28,
+    height: 28,
   },
   label: {
     fontSize: 13,
@@ -691,44 +641,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.black,
     borderWidth: 2,
     borderColor: Colors.black,
-  },
-  sectionTitle: {
-    fontSize: 15,
-    fontFamily: Fonts.bold,
-    color: Colors.black,
-    marginTop: Spacing.two,
-    marginBottom: Spacing.one,
-  },
-  sectionHint: {
-    fontSize: 13,
-    fontFamily: Fonts.medium,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    marginBottom: Spacing.three,
-  },
-  addAccountOptions: {
-    flexDirection: 'row',
-    gap: Spacing.twoHalf,
-    marginTop: Spacing.one,
-  },
-  addAccountOption: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    paddingVertical: Spacing.three,
-    borderWidth: 2,
-    borderRadius: 10,
-  },
-  addAccountOptionText: {
-    fontSize: 13,
-    fontFamily: Fonts.bold,
-    color: Colors.black,
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
   },
   modalActions: {
     flexDirection: 'row',

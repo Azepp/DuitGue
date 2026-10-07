@@ -347,6 +347,7 @@ export default function GueScreen() {
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <MaterialCommunityIcons name="account-switch" size={24} color={Colors.black} />
+                <ThemedText style={styles.modalTitle}>Ganti Akun</ThemedText>
                 <Pressable onPress={closeSwitchModal} hitSlop={12}>
                   <MaterialCommunityIcons name="close" size={22} color={Colors.black} />
                 </Pressable>
